@@ -1,0 +1,95 @@
+# AI News Explainer - Configuration
+
+# LLM Settings
+llm:
+  provider: "ollama"
+  model: "llama3"  # or "mistral"
+  temperature: 0.7
+  max_tokens: 1000  # Reduced from 2000 for faster generation
+  base_url: "http://localhost:11434"
+  timeout: 300  # Increased to 5 minutes
+
+# News Sources
+news:
+  sources:
+    - type: "rss"
+      name: "TechCrunch"
+      url: "https://techcrunch.com/feed/"
+    - type: "rss"
+      name: "BBC News"
+      url: "http://feeds.bbci.co.uk/news/rss.xml"
+    - type: "gnews"
+      api_key: ""  # Optional - leave empty for RSS only
+      language: "en"
+      country: "us"
+  
+  max_articles: 5
+  min_article_length: 200
+  remove_duplicates: true
+
+# Content Generation
+content:
+  summary_length: 150  # words
+  narration_style: "neutral"  # neutral, casual, formal
+  target_duration: 90  # seconds
+  
+# Scene Planning
+scenes:
+  min_scene_duration: 8  # seconds
+  max_scene_duration: 20  # seconds
+  transition_duration: 0.5  # seconds
+  
+# Animation Settings
+animation:
+  engine: "moviepy"  # Changed from manim to moviepy
+  quality: "medium_quality"  # low, medium, high, production
+  fps: 30
+  resolution: "1080p"  # 720p, 1080p, 4k
+  background_color: "#1a1a2e"
+  text_color: "#eee"
+  accent_color: "#00d4ff"
+  font: "Inter"
+  
+# Text-to-Speech
+tts:
+  engine: "gtts"  # gtts (recommended), pyttsx3, or coqui
+  voice: "en"  # Language code for gTTS
+  speed: 1.0
+  pitch: 1.0
+  
+# Video Composition
+video:
+  # ---- Feature flag ----
+  generate_video: false  # Set to true to enable video generation
+
+  # ---- Output settings ----
+  output_format: "mp4"
+  codec: "libx264"
+  audio_codec: "aac"
+  bitrate: "5000k"
+
+  # ---- Resolution & timing ----
+  width: 1920
+  height: 1080
+  fps: 24
+
+  # ---- Visual defaults (IMPORTANT – fixes your error) ----
+  background_color: "#0F172A"   # Dark slate
+  text_color: "#FFFFFF"         # Safe fallback (prevents hex error)
+  highlight_color: "#38BDF8"    # Accent color (optional)
+
+  # ---- Audio options ----
+  background_music: false
+  background_music_volume: 0.1
+
+# Output Paths
+paths:
+  output_dir: "output"
+  assets_dir: "assets"
+  temp_dir: "temp"
+  
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "logs/app.log"
+  console: true

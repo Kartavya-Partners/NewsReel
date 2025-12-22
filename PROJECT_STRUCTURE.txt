@@ -1,0 +1,42 @@
+"""
+Project Structure Visualization
+
+kartavya_submission/
+│
+├── agents/                          # Individual agent implementations
+│   ├── __init__.py
+│   ├── base_agent.py               # Abstract base class for all agents
+│   ├── news_collection_agent.py    # Fetches news from RSS/APIs
+│   ├── summarization_agent.py      # LLM-based summarization
+│   ├── script_writer_agent.py      # Converts to narration
+│   └── scene_planner_agent.py      # Plans visual scenes
+│
+├── workflows/                       # LangGraph workflow definitions
+│   ├── __init__.py
+│   └── news_video_workflow.py      # Main workflow orchestration
+│
+├── utils/                          # Helper utilities
+│   ├── __init__.py
+│   └── llm_client.py              # Ollama LLM client
+│
+├── config/                         # Configuration files
+│   └── settings.yaml              # Main configuration
+│
+├── assets/                         # Static assets (images, icons)
+│   └── (empty - for future use)
+│
+├── output/                         # Generated videos and results
+│   └── (created at runtime)
+│
+├── logs/                          # Application logs
+│   └── (created at runtime)
+│
+├── temp/                          # Temporary files
+│   └── (created at runtime)
+│
+├── main.py                        # CLI entry point
+├── requirements.txt               # Python dependencies
+├── README.md                      # Project documentation
+└── .gitignore                     # Git ignore rules
+
+"""
