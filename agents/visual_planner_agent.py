@@ -82,8 +82,11 @@ class VisualPlannerAgent(BaseAgent):
         CRITICAL INSTRUCTIONS:
         1. Classify scene type: 'RE_ENACTMENT', 'REAL_FOOTAGE', 'INFOGRAPHIC'.
         2. Assign 'camera_motion': 'zoom_in', 'zoom_out', 'pan_left', 'pan_right'.
-        3. 'lower_third_text': Short headline. OMIT if no specific info.
-        4. 'image_query': Detailed prompt for AI image (Unreal Engine 5 style).
+        3. 'lower_third_text': Short headline (MAX 6 WORDS). OMIT if no specific info.
+        4. 'image_query': Detailed prompt. rules:
+           - FORCE 'Location/Country' context (e.g., "New Delhi India").
+           - NO TEXT/CHARTS: Do NOT ask for "charts", "graphs", or "signs".
+           - STYLE: "Cinematic, Unreal Engine 5, Photorealistic, No Text".
 
         OUTPUT FORMAT (Strict JSON List):
         [
@@ -141,25 +144,31 @@ class VisualPlannerAgent(BaseAgent):
         3. Output ONLY valid JSON.
         
         GUIDANCE:
-        - If the scene describes an EVENT (explosion, arrest, raid):
+        - FORCE 'Location/Country' context into every 'image_query'.
+        - NO TEXT/CHARTS: Do NOT ask for "charts", "graphs", "timelines", "signs", or "text". AI cannot write text.
+        - USE VISUAL METAPHORS: Instead of "Chart of rising prices", ask for "Pile of gold coins growing higher".
+        - Format: "EVENT: [Description], LOCATION: [City/Country], CONTEXT: [News Context], STYLE: [Style]"
+        
+        - If the scene describes an EVENT (explosion, arrest, raid) in [City]:
             - Scene Type: 'RE_ENACTMENT'
-            - Motion: 'zoom_in' (Breaking news feel)
-            - Query: "Hyper-realistic 3D render of [ACTION], dramatic lighting, isometric view, unreal engine 5, news broadcast style"
+            - Motion: 'zoom_in'
+            - Query: "EVENT: Car explosion, LOCATION: Delhi Red Fort India, CONTEXT: Police investigation, STYLE: Hyper-realistic 3D render, unreal engine 5, dramatic lighting, breaking news, no text"
         - If specific PLACE/PERSON is named:
             - Scene Type: 'REAL_FOOTAGE'
-            - Motion: 'pan_right' (Investigation feel) or 'zoom_out' (Reveal)
+            - Motion: 'pan_right'
+            - Query: "EVENT: Public Protest, LOCATION: New Delhi India, CONTEXT: Anti-government demonstration, STYLE: Documentary photography, DSLR, 8k, candid"
         - If abstract:
             - Scene Type: 'INFOGRAPHIC'
-            - Motion: 'pan_left' or 'zoom_in' (slow)
+            - Query: "EVENT: Smog over city skyline, LOCATION: India, CONTEXT: Environmental crisis, STYLE: 3D Render, clean, cinematic lighting, no text"
 
         OUTPUT FORMAT:
         {{
             "visual": {{
                 "scene_type": "RE_ENACTMENT",
-                "image_query": "Hyper-realistic 3D render of car explosion at Red Fort, isometric view, dramatic lighting, police tape, news broadcast style",
+                "image_query": "EVENT: Car explosion, LOCATION: Red Fort Delhi India, CONTEXT: Terror attack investigation, STYLE: Hyper-realistic 3D render, unreal engine 5, news broadcast style",
                 "visual_style": "3d_render",
                 "camera_motion": "zoom_in", 
-                "lower_third_text": "Short headline. Extract specific Date/Location ONLY if present in source text. If missing, omit them. DO NOT INVENT.",
+                "lower_third_text": "Short headline. Extract specific Date/Location ONLY if present in source text.",
                 "overlay_elements": ["breaking_news_banner"]
             }}
         }}

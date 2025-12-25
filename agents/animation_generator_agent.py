@@ -121,24 +121,23 @@ class AnimationGeneratorAgent(VideoGeneratorAgent):
         # We assume the clip is already 1.15x larger than screen
         
         if motion_type == 'zoom_in':
-            # Slow zoom into center (1.0 -> 1.05 scale relative to current)
-            return clip.with_effects([vfx.Resize(lambda t: 1 + 0.04 * (t / duration))])
+            # Medium-Fast zoom (0.07 factor) - User Request 175%
+            return clip.with_effects([vfx.Resize(lambda t: 1 + 0.07 * (t / duration))])
             
         elif motion_type == 'zoom_out':
-            # Reveal context (1.05 -> 1.0)
-            return clip.with_effects([vfx.Resize(lambda t: 1.05 - 0.04 * (t / duration))])
+            # Medium-Fast reveal
+            return clip.with_effects([vfx.Resize(lambda t: 1.10 - 0.07 * (t / duration))])
             
         elif motion_type == 'pan_left':
-            # Move Right to Left
-            # Start at x=0, move to x=-30
-            return clip.with_position(lambda t: (int(-30 * (t / duration)), "center"))
+            # Move Right to Left (Medium: 60px)
+            return clip.with_position(lambda t: (int(-60 * (t / duration)), "center"))
             
         elif motion_type == 'pan_right':
-            # Move Left to Right
-            return clip.with_position(lambda t: (int(30 * (t / duration)), "center"))
+            # Move Left to Right (Medium: 60px)
+            return clip.with_position(lambda t: (int(60 * (t / duration)), "center"))
             
         # Default: Gentle Zoom
-        return clip.with_effects([vfx.Resize(lambda t: 1 + 0.03 * (t / duration))])
+        return clip.with_effects([vfx.Resize(lambda t: 1 + 0.05 * (t / duration))])
 
     # ---------------------------------------------------------
     # Background helpers
@@ -245,7 +244,7 @@ class AnimationGeneratorAgent(VideoGeneratorAgent):
         except:
              font_head = ImageFont.load_default()
              
-        draw.text((100, 20), headline[:60], font=font_head, fill="white")
+        draw.text((100, 20), headline[:48], font=font_head, fill="white")
         
         # 3. Draw Subtext
         if subtext:

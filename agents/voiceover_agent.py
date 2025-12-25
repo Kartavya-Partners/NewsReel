@@ -102,18 +102,40 @@ class VoiceoverAgent(VideoGeneratorAgent):
                 if not clean_text.strip():
                     continue
                     
-                # Generate Raw gTTS
+                # Generate Raw Audio
                 raw_path = self.temp_dir / f"temp_raw_{scene_index}_{i}.mp3"
-                tts = gTTS(text=clean_text, lang='en', slow=False)
-                tts.save(str(raw_path))
                 
-                # Apply Speed (0.93x) using ffmpeg 'atempo'
-                # User asked for 0.92-0.96. 0.93 is a sweet spot.
+                if self.engine == 'edge-tts':
+                    # Edge TTS (CLI) - High Quality Neural Voice
+                    # Command: edge-tts --text "..." --write-media "file.mp3" --voice "..."
+                    try:
+                        subprocess.run([
+                            'edge-tts',
+                            '--text', clean_text,
+                            '--write-media', str(raw_path),
+                            '--voice', self.voice
+                        ], check=True, capture_output=True)
+                    except subprocess.CalledProcessError as e:
+                        self.log_progress(f"Edge TTS failed: {e.stderr}", level="error")
+                        # Fallback to gTTS if Edge fails
+                        tts = gTTS(text=clean_text, lang='en', slow=False)
+                        tts.save(str(raw_path))
+                    except FileNotFoundError:
+                        self.log_progress("edge-tts binary not found. Is it installed?", level="error")
+                        tts = gTTS(text=clean_text, lang='en', slow=False)
+                        tts.save(str(raw_path))
+                else:
+                    # Standard gTTS
+                    tts = gTTS(text=clean_text, lang='en', slow=False)
+                    tts.save(str(raw_path))
+                
+                # Apply Speed (1.05x) using ffmpeg 'atempo'
+                # User asked for faster narration (Brisk News).
                 slow_path = self.temp_dir / f"temp_slow_{scene_index}_{i}.mp3"
                 cmd = [
                     ffmpeg_exe, '-y', '-v', 'error',
                     '-i', str(raw_path),
-                    '-filter:a', 'atempo=0.93',
+                    '-filter:a', 'atempo=1.05',
                     '-vn', str(slow_path)
                 ]
                 subprocess.run(cmd, check=True)

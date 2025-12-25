@@ -53,17 +53,22 @@ class ScriptWriterAgent(BaseAgent):
         target_words = int((self.target_duration / 60) * 150)
         
         # Simplified prompt
-        prompt = f"""Write a natural spoken narration script for a short video based on this summary.
+        prompt = f"""Write a professional news explainer script based on this summary.
 Target length: {target_words} words.
 
-IMPORTANT INSTRUCTIONS:
-1. Write ONLY the spoken words. 
-2. Do NOT include speaker labels like 'News Anchor:', 'Narrator:', or 'Host:'.
-3. Do NOT include stage directions or visual descriptions in brackets.
-4. Do NOT verify or spell out punctuation (e.g., do NOT write 'dot', 'comma').
-5. INCLUDE SPECIFIC FACTS from the summary: Date, Time, Location, Death Toll (if mentioned).
-6. Start with a strong lead sentence mentioning the location and event.
-7. Make it sound professional yet engaging, like a TV news segment.
+STRICT JOURNALISTIC RULES (5W+1H):
+1. **WHAT & WHERE FIRST**: Start immediately with the event and location. "Protests erupted in New Delhi..."
+2. **FACT-BASED**: Use attribution ("According to police", "Reports suggest"). NEVER guess.
+3. **NEUTRAL TONE**: No "tragic/heartbreaking". Be serious but calm.
+4. **SHORT SENTENCES**: Write for the ear. Simple words. 
+5. **CHRONOLOGICAL**: What happened first -> What is happening now -> Official response.
+6. **NEUTRAL ENDING**: End with the current status or "investigation ongoing". Do not summarize feelings.
+
+FORMATTING:
+- Write ONLY the spoken words.
+- NO labels (Anchor:, Host:).
+- NO stage directions [brackets].
+- NO conversational fillers ("Here is the script").
 
 Topic: {topic}
 Summary: {summary}

@@ -46,8 +46,8 @@ animation:
   
 # Text-to-Speech
 tts:
-  engine: "gtts"  # gtts (recommended), pyttsx3, or coqui
-  voice: "en"  # Language code for gTTS
+  engine: "edge-tts"  # edge-tts (recommended for realism), gtts, or pyttsx3
+  voice: "en-US-EricNeural"  # Male News Anchor for Edge TTS
   speed: 1.0
   pitch: 1.0
   

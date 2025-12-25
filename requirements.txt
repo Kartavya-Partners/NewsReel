@@ -17,6 +17,7 @@ Pillow>=10.0.0
 numpy>=1.24.0
 imageio-ffmpeg>=0.4.9
 python-dateutil>=2.8.2
+edge-tts
 imageio
 
 # Text-to-Speech
