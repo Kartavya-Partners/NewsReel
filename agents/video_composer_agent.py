@@ -9,7 +9,7 @@ from datetime import datetime
 
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.audio.io.AudioFileClip import AudioFileClip
-from moviepy.video.compositing.concatenate import concatenate_videoclips
+from moviepy.video.compositing.CompositeVideoClip import concatenate_videoclips
 
 from .video_generator_agent import VideoGeneratorAgent
 from .base_agent import AgentState
@@ -66,10 +66,10 @@ class VideoComposerAgent(VideoGeneratorAgent):
                     audio_clip.close()
                     continue
 
-                video_clip = video_clip.set_duration(final_duration)
-                audio_clip = audio_clip.set_duration(final_duration)
+                video_clip = video_clip.with_duration(final_duration)
+                audio_clip = audio_clip.with_duration(final_duration)
 
-                video_with_audio = video_clip.set_audio(audio_clip)
+                video_with_audio = video_clip.with_audio(audio_clip)
                 clips_with_audio.append(video_with_audio)
 
             except Exception as e:
@@ -97,7 +97,6 @@ class VideoComposerAgent(VideoGeneratorAgent):
             codec=self.video_config.get("codec", "libx264"),
             audio_codec=self.video_config.get("audio_codec", "aac"),
             bitrate=self.video_config.get("bitrate", "5000k"),
-            verbose=False,
             logger=None
         )
 

@@ -42,41 +42,67 @@ class SummarizationAgent(BaseAgent):
     
     def _combine_articles(self, articles: list) -> str:
         """
-        Combine multiple articles into single text.
-        
-        Args:
-            articles: List of article dictionaries
-            
-        Returns:
-            Combined text
+        Format articles into a chronological list of headlines.
         """
-        combined = []
+        formatted_lines = []
         
+        # Sort just in case (though should be sorted by collection agent)
+        # Handle cases where published_dt might be missing (fallback to string sort)
+        try:
+             articles.sort(key=lambda x: x.get('published_dt') or x.get('published', ''))
+        except:
+             pass
+
         for article in articles:
-            text = f"Title: {article['title']}\n"
-            text += f"Content: {article.get('content', article.get('summary', ''))}\n"
-            combined.append(text)
+            # Extract date string YYYY-MM-DD
+            date_str = "Unknown Date"
+            if article.get('published_dt'):
+                date_str = article['published_dt'].strftime("%Y-%m-%d")
+            elif article.get('published'):
+                date_str = article['published'][:10]
+                
+            line = f"[{date_str}]\n- {article['title']} ({article.get('source', 'Unknown')})"
+            formatted_lines.append(line)
         
-        return "\n\n".join(combined)
+        return "\n\n".join(formatted_lines)
     
     def _generate_summary(self, text: str, topic: str) -> str:
         """
-        Generate summary using LLM.
-        
-        Args:
-            text: Combined article text
-            topic: Topic of the news
-            
-        Returns:
-            Generated summary
+        Generate summary using Senior Newsroom Editor prompt.
         """
-        # Simplified, more direct prompt
-        prompt = f"""Summarize these news articles about "{topic}" in {self.summary_length} words.
+        # DEBUG: Save input to file
+        try:
+            with open("debug_summary_input.txt", "w", encoding="utf-8") as f:
+                f.write(f"PROMPT INPUT (HEADLINES):\n{text}")
+        except:
+            pass
 
-Articles:
-{text[:3000]}
+        prompt = f"""You are a senior newsroom editor.
 
-Summary ({self.summary_length} words):"""
+Topic: "{topic}"
+
+You are given VERIFIED Google News headlines ordered from OLDEST to LATEST.
+
+TASK:
+Write ONE concise news paragraph exactly like a professional news bulletin.
+
+RULES:
+1. Follow strict chronological order (previous → latest).
+2. Treat early headlines as BACKGROUND and later ones as UPDATES.
+3. Mention dates, locations, authorities, and actions clearly.
+4. Do NOT invent facts.
+5. If headlines refer to different years or unrelated events, clearly state that no single recent incident exists.
+
+STYLE:
+- Neutral
+- Factual
+- Newsroom tone (BBC / Reuters)
+- No storytelling, no opinions
+
+HEADLINES:
+{text}
+
+FINAL NEWS SUMMARY:"""
 
         summary = self.llm_client.generate(prompt)
         return summary.strip()

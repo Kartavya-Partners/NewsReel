@@ -53,12 +53,59 @@ class ScriptWriterAgent(BaseAgent):
         target_words = int((self.target_duration / 60) * 150)
         
         # Simplified prompt
-        prompt = f"""Convert this summary into a natural spoken script for a video ({target_words} words).
+        prompt = f"""Write a natural spoken narration script for a short video based on this summary.
+Target length: {target_words} words.
+
+IMPORTANT INSTRUCTIONS:
+1. Write ONLY the spoken words. 
+2. Do NOT include speaker labels like 'News Anchor:', 'Narrator:', or 'Host:'.
+3. Do NOT include stage directions or visual descriptions in brackets.
+4. Do NOT verify or spell out punctuation (e.g., do NOT write 'dot', 'comma').
+5. INCLUDE SPECIFIC FACTS from the summary: Date, Time, Location, Death Toll (if mentioned).
+6. Start with a strong lead sentence mentioning the location and event.
+7. Make it sound professional yet engaging, like a TV news segment.
 
 Topic: {topic}
 Summary: {summary}
 
-Script:"""
+Narration Script:"""
 
         narration = self.llm_client.generate(prompt)
-        return narration.strip()
+        return self._clean_narration(narration)
+
+    def _clean_narration(self, text: str) -> str:
+        """Remove metadata, notes, and stage directions."""
+        import re
+        
+        lines = text.split('\n')
+        cleaned_lines = []
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+                
+            # Skip metadata lines like "Title:", "Note:", "Narration Script:"
+            # Also catch conversational fillers like "Here's the narration script:"
+            if re.match(r'^(Title|Note|Topic|Summary|Narration|Script|Here is|Here\'s|Audio)(:| )', line, re.IGNORECASE):
+                continue
+            
+            # Remove "News Anchor:" prefixes
+            line = re.sub(r'^\s*(News Anchor|Host|Narrator|Presenter)(\s*:)?\s*', '', line, flags=re.IGNORECASE)
+            
+            # Remove quotes if the entire line is quoted
+            if line.startswith('"') and line.endswith('"'):
+                line = line[1:-1]
+            
+            # Remove content in brackets/parentheses if it looks like direction
+            line = re.sub(r'\[.*?\]', '', line)
+            line = re.sub(r'\(.*?\)', '', line)
+
+            if line.strip():
+                cleaned_lines.append(line.strip())
+                
+        # Join and one last cleanup of conversational prefixes in the full text
+        full_text = " ".join(cleaned_lines)
+        full_text = re.sub(r"^(Here's|Here is) the (narration|script).*?(:|\.)", "", full_text, flags=re.IGNORECASE).strip()
+        
+        return full_text

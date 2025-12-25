@@ -4,27 +4,21 @@
 llm:
   provider: "ollama"
   model: "llama3"  # or "mistral"
-  temperature: 0.7
+  temperature: 0.1
   max_tokens: 1000  # Reduced from 2000 for faster generation
   base_url: "http://localhost:11434"
-  timeout: 300  # Increased to 5 minutes
+  timeout: 600  # Increased to 15 minutes (Safe)
 
 # News Sources
 news:
   sources:
+    # STRICTLY Google News RSS as per new editor logic
     - type: "rss"
-      name: "TechCrunch"
-      url: "https://techcrunch.com/feed/"
-    - type: "rss"
-      name: "BBC News"
-      url: "http://feeds.bbci.co.uk/news/rss.xml"
-    - type: "gnews"
-      api_key: ""  # Optional - leave empty for RSS only
-      language: "en"
-      country: "us"
+      name: "Google News"
+      url: "https://news.google.com/rss/search?q={topic}&hl=en-US&gl=US&ceid=US:en"
   
-  max_articles: 5
-  min_article_length: 200
+  max_articles: 30
+  min_article_length: 50 # Not strictly used for headlines, but good to keep safe
   remove_duplicates: true
 
 # Content Generation
@@ -60,7 +54,7 @@ tts:
 # Video Composition
 video:
   # ---- Feature flag ----
-  generate_video: false  # Set to true to enable video generation
+  generate_video: true  # Set to true to enable video generation
 
   # ---- Output settings ----
   output_format: "mp4"

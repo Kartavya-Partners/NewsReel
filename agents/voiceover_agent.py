@@ -51,106 +51,154 @@ class VoiceoverAgent(VideoGeneratorAgent):
     
     def _generate_audio(self, scene: Dict[str, Any], scene_index: int) -> Path:
         """
-        Generate audio file for a single scene.
-        
-        Args:
-            scene: Scene dictionary with narration_text
-            scene_index: Index of the scene
-            
-        Returns:
-            Path to generated audio file
+        Generate audio with Speed Control and SSML Pause support.
         """
+        import imageio_ffmpeg
+        import subprocess
+        from moviepy import AudioFileClip, concatenate_audioclips
+        import re
+        import os
+        
         narration_text = scene.get('narration_text', '')
+        # Sanitize text but keep <break> tags
+        narration_text = self._sanitize_text_for_tts(narration_text, keep_ssml=True)
         
         if not narration_text.strip():
-            self.log_progress(f"Scene {scene_index} has no narration text", level="warning")
-            # Create silent audio placeholder
             return self._create_silent_audio(scene.get('duration', 10), scene_index)
+            
+        final_output_path = self.temp_dir / f"audio_{scene_index:03d}.mp3"
+        ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
         
-        # Check cache first
-        cache_key = self._get_cache_key(narration_text)
-        cached_path = self.audio_cache_dir / f"{cache_key}.mp3"
+        # 1. Parse Segments (Text vs Break)
+        # Regex to find <break time="500ms"/>
+        segments = re.split(r'(<break\s+time="(\d+)ms"\s*/>)', narration_text)
         
-        if cached_path.exists():
-            self.log_progress(f"Using cached audio for scene {scene_index}", level="debug")
-            # Copy to scene-specific name
-            output_path = self.temp_dir / f"audio_{scene_index:03d}.mp3"
-            import shutil
-            shutil.copy(cached_path, output_path)
-            return output_path
+        audio_clips = []
         
-        # Generate new audio
-        output_path = self.temp_dir / f"audio_{scene_index:03d}.mp3"
-        
-        try:
-            if self.engine == 'gtts':
-                tts = gTTS(text=narration_text, lang='en', slow=False)
-                tts.save(str(output_path))
+        # Iterating: segments[0]=text, segments[1]=tag, segments[2]=time, segments[3]=text...
+        i = 0
+        while i < len(segments):
+            text_part = segments[i]
+            i += 1
+            
+            # If it's the time capture group (digit), skip (already handled by tag check)
+            if text_part and text_part.isdigit() and i < len(segments) and segments[i-2].startswith('<break'):
+                continue
                 
-                # Save to cache
-                import shutil
-                shutil.copy(output_path, cached_path)
-            else:
-                # Fallback to pyttsx3 if available
+            # Check if this part was a break tag
+            if text_part and text_part.startswith('<break'):
+                # Extract time from next captured group if regex logic holds, 
+                # OR just parse the tag string directly simpler
+                match = re.search(r'time="(\d+)ms"', text_part)
+                if match:
+                    ms = int(match.group(1))
+                    audio_clips.append(self._create_silent_clip(ms / 1000.0))
+                continue
+            
+            # Otherwise it's text
+            if text_part and text_part.strip():
+                # Clean specific punctuation for gTTS
+                clean_text = self._sanitize_text_for_tts(text_part, keep_ssml=False)
+                if not clean_text.strip():
+                    continue
+                    
+                # Generate Raw gTTS
+                raw_path = self.temp_dir / f"temp_raw_{scene_index}_{i}.mp3"
+                tts = gTTS(text=clean_text, lang='en', slow=False)
+                tts.save(str(raw_path))
+                
+                # Apply Speed (0.93x) using ffmpeg 'atempo'
+                # User asked for 0.92-0.96. 0.93 is a sweet spot.
+                slow_path = self.temp_dir / f"temp_slow_{scene_index}_{i}.mp3"
+                cmd = [
+                    ffmpeg_exe, '-y', '-v', 'error',
+                    '-i', str(raw_path),
+                    '-filter:a', 'atempo=0.93',
+                    '-vn', str(slow_path)
+                ]
+                subprocess.run(cmd, check=True)
+                
+                # Load as MoviePy Clip
                 try:
-                    import pyttsx3
-                    engine = pyttsx3.init()
-                    engine.setProperty('rate', int(150 * self.speed))
-                    engine.save_to_file(narration_text, str(output_path))
-                    engine.runAndWait()
-                except ImportError:
-                    self.log_progress(
-                        "Neither gTTS nor pyttsx3 available, creating silent audio",
-                        level="warning"
-                    )
-                    return self._create_silent_audio(scene.get('duration', 10), scene_index)
-        
+                    clip = AudioFileClip(str(slow_path))
+                    audio_clips.append(clip)
+                except Exception as e:
+                    self.log_progress(f"Error loading clip: {e}", level="error")
+
+        if not audio_clips:
+             return self._create_silent_audio(scene.get('duration', 5), scene_index)
+
+        # 2. Concatenate
+        files_to_close = audio_clips
+        try:
+            final_clip = concatenate_audioclips(audio_clips)
+            final_clip.write_audiofile(str(final_output_path), logger=None, fps=44100)
+            final_clip.close()
         except Exception as e:
-            self.log_progress(f"Error generating audio: {e}", level="error")
-            return self._create_silent_audio(scene.get('duration', 10), scene_index)
+            self.log_progress(f"Concat error: {e}", level="error")
+            # Fallback: just return first clip or silent
+            return self._create_silent_audio(5, scene_index)
+        finally:
+             for c in files_to_close:
+                 if hasattr(c, 'close'): c.close()
         
-        return output_path
-    
-    def _get_cache_key(self, text: str) -> str:
-        """
-        Generate cache key for text.
-        
-        Args:
-            text: Text to hash
-            
-        Returns:
-            MD5 hash of text
-        """
-        return hashlib.md5(text.encode()).hexdigest()
-    
-    def _create_silent_audio(self, duration: float, scene_index: int) -> Path:
-        """
-        Create a silent audio file as fallback.
-        
-        Args:
-            duration: Duration in seconds
-            scene_index: Scene index
-            
-        Returns:
-            Path to silent audio file
-        """
-        from moviepy.editor import AudioClip
+        return final_output_path
+
+    def _create_silent_clip(self, duration_sec: float):
+        from moviepy import AudioArrayClip
         import numpy as np
+        # 44100Hz silence
+        silence = np.zeros((int(duration_sec * 44100), 2))
+        return AudioArrayClip(silence, fps=44100)
         
-        output_path = self.temp_dir / f"audio_{scene_index:03d}_silent.mp3"
+    def _create_silent_audio(self, duration: float, scene_index: int) -> Path:
+        path = self.temp_dir / f"audio_{scene_index}_silent.mp3"
+        clip = self._create_silent_clip(duration)
+        clip.write_audiofile(str(path), fps=44100, logger=None)
+        clip.close()
+        return path
+
+    def _sanitize_text_for_tts(self, text: str, keep_ssml: bool = False) -> str:
+        """
+        Clean text to ensure natural pronunciation and remove artifacts.
+        """
+        import re
         
-        # Create silent audio
-        silent_audio = AudioClip(
-            lambda t: np.zeros(2),  # Stereo silence
-            duration=duration,
-            fps=44100
-        )
+        if not text:
+            return ""
+            
+        # Remove markdown bold/italic
+        text = text.replace('**', '').replace('*', '')
         
-        silent_audio.write_audiofile(
-            str(output_path),
-            fps=44100,
-            verbose=False,
-            logger=None
-        )
+        # Remove brackets and things inside them (often stage directions)
+        # BUT preserve <break> tags if requested
+        if keep_ssml:
+             # Temporarily hide break tags
+             placeholders = []
+             def replace_break(match):
+                 placeholders.append(match.group(0))
+                 return f"__SSML_BREAK_{len(placeholders)-1}__"
+             
+             text = re.sub(r'<break.*?>', replace_break, text)
+             
+             # Clean brackets
+             text = re.sub(r'\[.*?\]', '', text)
+             text = re.sub(r'\(.*?\)', '', text)
+             
+             # Restore break tags
+             for i, tag in enumerate(placeholders):
+                 text = text.replace(f"__SSML_BREAK_{i}__", tag)
+        else:
+             text = re.sub(r'\[.*?\]', '', text)
+             text = re.sub(r'\(.*?\)', '', text)
         
-        return output_path
+        # Remove "News Anchor:" prefixes if they snuck in
+        text = re.sub(r'^(News Anchor|Host|Narrator):\s*', '', text, flags=re.IGNORECASE)
+        
+        # Replace complex punctuation with simple pauses
+        text = text.replace(' -- ', ', ').replace('—', ', ')
+        
+        # Ensure single spaces
+        text = re.sub(r'\s+', ' ', text).strip()
+        
+        return text

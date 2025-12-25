@@ -19,7 +19,7 @@ class LLMClient:
         self.temperature = config.get('temperature', 0.7)
         self.max_tokens = config.get('max_tokens', 1000)
         self.base_url = config.get('base_url', 'http://localhost:11434')
-        self.timeout = config.get('timeout', 300)  # Default 5 minutes
+        self.timeout = config.get('timeout', 600)  # Default 10 minutes (Safe for Batch)
         
         logger.info(f"Initialized LLM client with model: {self.model} (timeout: {self.timeout}s)")
     
