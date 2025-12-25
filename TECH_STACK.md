@@ -1,0 +1,100 @@
+# 🛠️ Technology Stack & Architecture Decisions
+
+This document outlines the core technologies used to build the **AI News Explainer** and the reasoning behind each choice.
+
+## 🧠 Core Intelligence
+### **Language**: Python 3.10+
+**Why?** The undisputed king of AI engineering. Massive ecosystem for LLMs (`ollama`), Data Science (`pandas`), and Media Processing (`moviepy`).
+
+### **LLM Interaction**: Ollama (Llama 3)
+**Why?**
+*   **Privacy & Cost**: Runs locally on the user's machine. No API fees, no data leaks.
+*   **Speed**: Faster latency for iterative tasks like summarization compared to cloud APIs.
+
+### **Architecture**: Agentic Workflow (LangGraph)
+**Why?**
+*   **Structured State**: We use `LangGraph`'s `StateGraph` to manage the flow of data between agents. This ensures type safety and predictable execution paths (e.g., News -> Script -> Visuals -> Video).
+*   **Modularity**: Instead of one giant script, we split the brain into independent nodes (`ScriptWriter`, `VisualPlanner`, `VideoComposer`).
+*   **Resilience**: If a node fails, the state graph preserves the context, allowing for potential retries or graceful degradation.
+
+---
+
+## 🎨 Media Generation
+### **Video Engine**: MoviePy v2.1.1 (Beta)
+**Why?**
+*   **Programmatic Control**: Unlike FFmpeg (which is purely command-line), MoviePy allows pythonic manipulation of clips (composition, fading, audio mixing).
+*   **v2.1.1 Choice**: We chose the latest Beta despite potential instability because it offers significantly better **Audio Mixing** and **Effect** capabilities than the old v1.0.
+
+### **Image Generation**: Pollinations.ai (API)
+**Why?**
+*   **No Login/Key Required**: zero-friction setup for the user.
+*   **Speed**: Generates images in seconds.
+*   **Flexibility**: Supports detailed prompts ("Unreal Engine 5 style", "No Text") which were critical for our quality upgrades.
+
+### **Voice Integration**: Edge-TTS
+**Why?**
+*   **Neural Quality**: Uses Microsoft's Azure Neural voices (e.g., `en-US-EricNeural`) which sound near-human, unlike the robotic standard `gTTS`.
+*   **Free**: Accessible without an Azure API key via the python wrapper.
+
+---
+
+## 🖥️ User Interface
+### **Frontend**: Streamlit
+**Why?**
+*   **Pure Python**: Allows data scientists and backend engineers to build a GUI without writing HTML/CSS/JS.
+*   **Reactive**: Instantly updates the video player and logs when the backend agents finish their tasks.
+*   **Deployment**: Can be packaged into a simple executable or batch file (`run_app.bat`) easily.
+
+---
+
+## 🔒 Reliability & Polish
+### **Fallback Systems**
+**Why?**
+*   **VisualAssetAgent**: We implemented a 5-layer fallback (Real Image -> AI Gen -> AI Gen Simple -> Backup Real -> Text). This ensures the video *never* crashes due to a missing image.
+
+### **Strict Formatting**
+**Why?**
+*   **Visual Planner**: Explicitly forbidding text in AI images solved the "gibberish text" hallucination problem common in image models.
+
+---
+
+## 🤖 Agents & Orchestration
+The system uses a **Linear Chain of Responsibility** pattern. Each agent performs a specialized task and passes the "State" to the next.
+
+### 1. NewsCollectionAgent
+*   **Role**: The Researcher.
+*   **Task**: Scrapes Google News/RSS feeds for the given topic. Deduplicates articles and extracts full text.
+
+### 2. SummarizationAgent
+*   **Role**: The Analyst.
+*   **Task**: Compresses 5-10 articles into a concise "Context Brief" for the scriptwriter, removing noise.
+
+### 3. ScriptWriterAgent
+*   **Role**: The Journalist.
+*   **Task**: Writes a 60-second broadcast script following strict **5W1H** principles (Who, What, Where, When, Why, How). Enforces short sentences.
+
+### 4. VisualPlannerAgent
+*   **Role**: The Director.
+*   **Task**: Breaks the script into 5-8 scenes. Generates specific "Image Prompts" (e.g., "Crowd in New Delhi, photorealistic").
+*   **Logic**: Decides if a scene needs `Zoom In`, `Pan`, or `Static` motion.
+
+### 5. VisualAssetAgent
+*   **Role**: The Artist / Archivist.
+*   **Task**: Acquires images using a 5-step fallback:
+    1.  Find Real News Image (High Res).
+    2.  Generate AI Image (Pollinations.ai).
+    3.  Generate AI Image (Simplified Prompt).
+    4.  Recover Low-Res Real Image (Upscaled).
+    5.  Text Slide (Fail-safe).
+
+### 6. AnimationGeneratorAgent
+*   **Role**: The Animator.
+*   **Task**: Turns static images into video clips using **Ken Burns** effects (Pan/Zoom) and overlays **Lower Third** headlines.
+
+### 7. VoiceoverAgent
+*   **Role**: The Anchor.
+*   **Task**: Generates high-quality narration using `Edge-TTS` (Neural Voice). Adjusts speed (1.05x) for urgency.
+
+### 8. VideoComposerAgent
+*   **Role**: The Editor.
+*   **Task**: Syncs audio and video. Adds **Background Music**, applies **Cross-Dissolve Transitions**, and renders the final MP4.
