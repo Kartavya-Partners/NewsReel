@@ -15,12 +15,13 @@ This project demonstrates a complete **multi-agent AI pipeline** that:
 
 - **Python 3.10+** - Core language
 - **LangGraph** - Agentic workflow orchestration
+- **RSS/GNews API** - News sources (free tier)
 - **Ollama (LLaMA 3/Mistral)** - Local LLM for content generation
+- **Pollinations.ai** - High resolution AI Image generation
 - **Manim** - Professional animation generation
 - **MoviePy** - Video composition
-- **Coqui TTS** - Natural text-to-speech
+- **Edge TTS** - Natural text-to-speech
 - **Streamlit** - Interactive web interface
-- **RSS/GNews API** - News sources (free tier)
 
 ## 🏗️ Architecture
 
