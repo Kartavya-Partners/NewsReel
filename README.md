@@ -1,41 +1,79 @@
-# AI News Explainer Video Generator
+# 🎬 AI NewsReel Generator
 
-An **Agentic AI system** that automatically transforms news articles into engaging 1-1.5 minute animated explainer videos.
+**Automated "Text-to-Video" Agentic System using Google Gemini & Python.**
 
-## 🎯 Project Overview
+AI NewsReel is a fully autonomous video generation pipeline that turns any news topic into a professional, 60-second news explainer video suitable for YouTube Shorts, Instagram Reels, or TikTok. It leverages a **Multi-Agent Architecture** to research, write, plan, and compose videos without human intervention.
 
-This project demonstrates a complete **multi-agent AI pipeline** that:
-- Fetches latest news from multiple sources
-- Intelligently summarizes and filters content
-- Generates natural narration scripts
-- Plans visual scenes automatically
-- Creates animated explainer videos with voiceover
+## 🚀 Key Features
+
+*   **🤖 Multi-Agent Orchestration:** Four specialized AI agents work in sequence:
+    *   **Researcher:** Fetches and filters real-time news from Google News RSS.
+    *   **Scriptwriter:** Drafts broadcast-quality narration (BBC/Reuters style).
+    *   **Scene Planner:** Segment scripts into strict 5-6 second scenes for maximum engagement.
+    *   **Visual Director:** Generates accurate AI image prompts (Unreal Engine style) using Gemini 2.0.
+*   **⚡ Powered by Gemini 2.0:** Optimized for the "Gemini 2.0 Flash Lite" model with smart rate-limiting and auto-retry logic to maximize Free Tier usage.
+*   **🎨 Dynamic Visuals:** Uses **Pollinations.ai** for uncensored, high-quality AI image generation, with fallback to real news images.
+*   **🗣️ Professional Voiceovers:** Integrated **Edge-TTS** for ultra-realistic neural voice narration.
+*   **🎥 Automated Editing:** Uses **MoviePy** to stitch images, audio, and transitions into a final MP4, complete with "Zoom/Pan" Ken Burns effects.
+*   **📺 Streamlit Dashboard:** A user-friendly UI to track agent progress live and view a persistent gallery of generated videos.
 
 ## 🛠️ Tech Stack
 
-- **Python 3.10+** - Core language
-- **LangGraph** - Agentic workflow orchestration
-- **RSS/GNews API** - News sources (free tier)
-- **Ollama (LLaMA 3/Mistral)** - Local LLM for content generation
-- **MoviePy v2** - Professional video composition & effects
-- **Pollinations.ai** - High resolution AI Image generation
-- **MoviePy** - Video composition
-- **Edge TTS** - Natural text-to-speech
-- **Streamlit** - Interactive web interface
+*   **Core:** Python 3.10+
+*   **LLM:** Google Gemini 2.0 Flash Lite (`google-generativeai`)
+*   **Frontend:** Streamlit
+*   **Video Engine:** MoviePy
+*   **Audio:** Edge-TTS
+*   **Visuals:** Pollinations.ai API & DuckDuckGo Images
+*   **Config:** YAML & Pydantic for rigid type validation
+
+## ⚙️ How It Works
+
+1.  **Input:** User provides a topic (e.g., "8th Pay Commission").
+2.  **Process:**
+    *   System scrapes latest articles.
+    *   Summarizes facts into a 150-word script.
+    *   Splits script into ~10 visual scenes.
+    *   Generates or fetches relevant images for each scene.
+    *   Synthesizes voiceover.
+3.  **Output:** A polished 1080p vertical/horizontal video file ready for upload.
+
+## 📦 Installation
+
+```bash
+git clone https://github.com/Kartavya-Partners/NewsReel.git
+cd NewsReel
+python -m venv venv
+# Activate venv:
+# Windows: venv\Scripts\activate
+# Mac/Linux: source venv/bin/activate
+pip install -r requirements.txt
+```
+
+**Configuration:**
+Create a `.env` file and add your Google API Key:
+```env
+GOOGLE_API_KEY=your_gemini_key_here
+```
+
+**Run:**
+```bash
+python -m streamlit run app.py
+```
 
 ## 🏗️ Architecture
 
 ```
 User Input → News Collection Agent → Content Filtering Agent → 
 Summarization Agent → Script Writer Agent → Scene Planner Agent → 
-Animation Generator Agent → Voiceover Agent → Video Composer Agent → 
+Visual Asset Agent → Voiceover Agent → Video Composer Agent → 
 Final Video Output
 ```
 
 ## 📁 Project Structure
 
 ```
-kartavya_submission/
+NewsReel/
 ├── agents/              # Individual agent implementations
 ├── workflows/           # LangGraph workflow definitions
 ├── utils/              # Helper functions
@@ -46,108 +84,11 @@ kartavya_submission/
 └── main.py             # CLI entry point
 ```
 
-## 🚀 Quick Start
-
-### 1. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 2. Install Ollama
-
-```bash
-# Download from https://ollama.ai
-ollama pull llama3
-```
-
-### 3. Run the Application
-
-**Web Interface:**
-```bash
-streamlit run app.py
-```
-
-**CLI:**
-```bash
-python main.py --topic "AI in Healthcare" --category technology
-```
-
-## 🎨 Features
-
-- ✅ Multi-agent AI pipeline with LangGraph
-- ✅ Automatic news collection and filtering
-- ✅ Intelligent content summarization
-- ✅ Natural script generation
-- ✅ Automated scene planning
-- ✅ Professional animations with Manim
-- ✅ Natural voiceover with Coqui TTS
-- ✅ Complete video composition
-- ✅ Interactive web interface
-
-## 📊 Agent Workflow
-
-Each agent has a specific responsibility:
-
-1. **News Collection Agent** - Fetches and deduplicates articles
-2. **Content Filtering Agent** - Removes irrelevant/clickbait content
-3. **Summarization Agent** - Creates concise factual summaries
-4. **Script Writer Agent** - Converts to natural narration
-5. **Scene Planner Agent** - Breaks into visual scenes
-6. **Animation Generator Agent** - Creates Ken Burns effects & motion using MoviePy
-7. **Voiceover Agent** - Generates TTS audio
-8. **Video Composer Agent** - Combines everything into final video
-
-## 🎥 Sample Output
-
-Generated videos are 1-1.5 minutes long with:
-- Animated text and graphics
-- Professional transitions
-- Natural voiceover narration
-- Background music (optional)
-- Clean, modern aesthetic
-
-## 📝 Configuration
-
-Edit `config/settings.yaml` to customize:
-- News sources and API keys
-- LLM model selection
-- Animation style and templates
-- Video output settings
-- TTS voice preferences
-
-## 🧪 Example Usage
-
-```python
-from workflows.news_video_workflow import NewsVideoWorkflow
-
-workflow = NewsVideoWorkflow()
-result = workflow.run(
-    topic="Artificial Intelligence",
-    category="technology",
-    duration=90  # seconds
-)
-
-print(f"Video generated: {result['output_path']}")
-```
-
-## 🎓 Educational Value
-
-This project demonstrates:
-- **Agentic AI** - Multi-step autonomous agents
-- **LangGraph** - State machine workflows
-- **Local LLMs** - Privacy-focused AI
-- **Multimedia Generation** - Combining text, audio, video
-- **Production Pipeline** - End-to-end automation
-
 ## 📄 License
 
 MIT License - Free for educational and commercial use
 
 ## 👨‍💻 Author
 
-Created as a demonstration of modern Agentic AI + GenAI capabilities
+Created by [Kartavya Partners](https://github.com/Kartavya-Partners) as a demonstration of modern Agentic AI + GenAI capabilities.
 
----
-
-**Perfect for**: AI/ML portfolios, job applications, technical interviews
