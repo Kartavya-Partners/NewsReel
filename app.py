@@ -4,6 +4,10 @@ import os
 from pathlib import Path
 import json
 import time
+from dotenv import load_dotenv
+
+# Load environment variables (API Keys)
+load_dotenv()
 
 # Ensure imports work (add root to path)
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -80,6 +84,20 @@ with st.sidebar:
             st.cache_data.clear()
             st.success("Config reloaded!")
 
+    st.divider()
+    st.header("📂 Recent Videos")
+    output_dir = Path("output")
+    if output_dir.exists():
+        video_files = sorted(list(output_dir.glob("*.mp4")), key=os.path.getmtime, reverse=True)
+        if video_files:
+            selected_video = st.selectbox("Select to play:", [f.name for f in video_files])
+            if selected_video:
+                st.session_state['selected_video_path'] = str(output_dir / selected_video)
+        else:
+            st.write("No videos found yet.")
+    else:
+        st.write("Output directory missing.")
+
 # ------------------------------------------------------------------
 # Main Interface
 # ------------------------------------------------------------------
@@ -100,6 +118,13 @@ with col2:
 # ------------------------------------------------------------------
 # Execution Logic
 # ------------------------------------------------------------------
+
+# Display Selected Video from Sidebar (Persistent View)
+if 'selected_video_path' in st.session_state and os.path.exists(st.session_state['selected_video_path']):
+    if not generate_btn: # Only show if not currently generating
+        st.divider()
+        st.subheader(f"📺 Playing: {os.path.basename(st.session_state['selected_video_path'])}")
+        st.video(st.session_state['selected_video_path'])
 
 if generate_btn and topic:
     

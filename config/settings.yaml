@@ -2,12 +2,11 @@
 
 # LLM Settings
 llm:
-  provider: "ollama"
-  model: "llama3"  # or "mistral"
-  temperature: 0.1
-  max_tokens: 1000  # Reduced from 2000 for faster generation
-  base_url: "http://localhost:11434"
-  timeout: 600  # Increased to 15 minutes (Safe)
+  provider: "gemini"
+  model: "gemini-2.0-flash-lite-001"
+  temperature: 0.3
+  max_tokens: 2000
+  timeout: 30
 
 # News Sources
 news:
@@ -29,8 +28,8 @@ content:
   
 # Scene Planning
 scenes:
-  min_scene_duration: 8  # seconds
-  max_scene_duration: 20  # seconds
+  min_scene_duration: 5  # seconds
+  max_scene_duration: 6  # seconds
   transition_duration: 0.5  # seconds
   
 # Animation Settings

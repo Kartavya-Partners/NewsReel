@@ -250,19 +250,33 @@ class VisualAssetAgent(BaseAgent):
                 f.write(response.content)
              
              # Validate Image Size
+             # Validate Image Size
+             is_small = False
              try:
                  from PIL import Image
                  with Image.open(image_path) as img:
                      width, height = img.size
                      if width < 800 or height < 600:
-                         # DO NOT DELETE. Rename to backup.
-                         backup_path = run_dir / f"backup_real_{key}.jpg"
-                         if image_path.exists():
-                             image_path.replace(backup_path)
-                         # Return None to signal "Main image failed", but backup exists
-                         return None, backup_path
-                     
-                     return image_path, None
+                         is_small = True
+                 
+                 if is_small:
+                     # DO NOT DELETE. Rename to backup.
+                     backup_path = run_dir / f"backup_real_{key}.jpg"
+                     if image_path.exists():
+                         # Windows Fix: Ensure file is closed before rename
+                         try:
+                            image_path.replace(backup_path)
+                         except OSError:
+                            # If still locked, wait briefly or just log (fail safe)
+                            import time
+                            time.sleep(0.1)
+                            if image_path.exists():
+                                image_path.replace(backup_path)
+                                
+                     # Return None to signal "Main image failed", but backup exists
+                     return None, backup_path
+                 
+                 return image_path, None
              except Exception as e:
                  if image_path.exists():
                      image_path.unlink()

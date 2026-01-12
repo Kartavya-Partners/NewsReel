@@ -40,6 +40,7 @@ class ScenePlannerAgent(BaseAgent):
     # ------------------------------------------------------------------
 
     def _generate_scene_plan(self, narration: str) -> List[Dict[str, Any]]:
+        MAX_SCENES = 10
         prompt = f"""
 You are a professional news video storyboard planner.
 
@@ -48,15 +49,16 @@ Convert the narration into visually meaningful scenes.
 RULES:
 - Output ONLY valid JSON
 - No markdown, no explanation text
-- Each scene must be visually concrete
-- Durations: {self.min_duration}–{self.max_duration} seconds
+- STRICT LIMIT: Maximum {MAX_SCENES} scenes total
+- Durations: {self.min_duration}–{self.max_duration} seconds per scene
+- Total video length should not exceed 60 seconds
 
 JSON FORMAT:
 {{
   "scenes": [
     {{
       "scene_id": 1,
-      "duration": 12,
+      "duration": 5,
       "narration_text": "...",
       "on_screen_text": "...",
       "scene_purpose": "headline | incident | investigation | public_reaction | conclusion",
@@ -79,6 +81,11 @@ NARRATION:
         if not scenes:
             raise ValueError("Empty scenes returned by LLM")
 
+        # STRICT ENFORCEMENT: Slice to Max 10
+        if len(scenes) > MAX_SCENES:
+            print(f"Warning: Trimming scenes from {len(scenes)} to {MAX_SCENES}")
+            scenes = scenes[:MAX_SCENES]
+            
         return scenes
 
     # ------------------------------------------------------------------

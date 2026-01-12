@@ -1,6 +1,6 @@
 PROMPT INPUT (HEADLINES):
-[2025-10-13]
-- 8th Pay Commission Soon? A Guide To Your Estimated Salary Hike And Allowances - NDTV (Google News)
+[2025-07-11]
+- What the 8th Pay Commission could mean for central government employees - ET Edge Insights - ET Edge Insights (Google News)
 
 [2025-10-29]
 - 8th Pay Commission: 10 Key Questions Answered — All You Need To Know - NDTV Profit (Google News)
@@ -11,23 +11,17 @@ PROMPT INPUT (HEADLINES):
 [2025-10-30]
 - 8th Pay Commission will test India’s fiscal resolve | Policy Circle - policycircle.org (Google News)
 
-[2025-10-31]
-- 8th Pay Commission: How much salary & pension hike should central government employees, pensioners expect - Times of India (Google News)
+[2025-10-30]
+- 8th Pay Commission: What central government employees and pensioners can expect for salaries, pension - MSN (Google News)
 
 [2025-10-31]
-- 8th Pay Commission: Good news for central government employees! Terms of reference approved by PM Modi-le - Times of India (Google News)
+- 8th Pay Commission: How much salary & pension hike should central government employees, pensioners expect - Times of India (Google News)
 
 [2025-10-31]
 - 8th Pay Commission: What will be the fitment factor and how will central government employees' new salary - Times of India (Google News)
 
 [2025-11-03]
 - Eighth Pay Commission terms of reference approved: What this means, likely impact on salaries, pensions of govt employees - The Indian Express (Google News)
-
-[2025-11-03]
-- 8th Pay Commission: By how much will salaries rise for central govt employees? | India News - Hindustan Times (Google News)
-
-[2025-11-04]
-- 8th Pay Commission latest update: Govt forms 8th CPC, names chairperson, announces ToR and timeline - The Economic Times (Google News)
 
 [2025-11-05]
 - 8th Pay Commission: 5 things you need to know - India Today (Google News)
@@ -38,23 +32,11 @@ PROMPT INPUT (HEADLINES):
 [2025-11-13]
 - Decoded: How the 8th Pay Commission could change govt pay and pensions - Business Standard (Google News)
 
-[2025-11-13]
-- 8th Pay Commission BIG update: Bad news for pensioners as 69 lakh retirees may be excluded from 8th CPC due t - india.com (Google News)
-
-[2025-11-14]
-- 8th Pay Commission salary calculator: Will employees' parents be included? All you should know - india.com (Google News)
-
-[2025-11-21]
-- 8th Pay Commission Update: 25 million employees and pensioners will receive a significant salary and pension - india.com (Google News)
-
-[2025-11-22]
-- 8th Pay Commission: Implications for fiscal health and social equity - The Indian Express (Google News)
-
 [2025-11-24]
 - 8th Pay Commission: NC JCM urges PM Modi to amend ToR; seeks OPS restoration, pension revision - Times of India (Google News)
 
 [2025-11-24]
-- 8th Pay Commission update: What is Fitment Factor and how it will determine salary hike? 8th CPC to have... - india.com (Google News)
+- 8th Pay Commission update: What is Fitment Factor and how it will determine salary hike? 8th CPC to have... - MSN (Google News)
 
 [2025-11-28]
 - 8th Pay Commission: How Higher Fitment Factor Can Lift Markets — JP Morgan Explains - NDTV Profit (Google News)
@@ -68,8 +50,11 @@ PROMPT INPUT (HEADLINES):
 [2025-12-02]
 - Centre shares 8th Pay Commission update, gives details on basic pay-DA linking | India News - Hindustan Times (Google News)
 
-[2025-12-03]
-- 8th Pay Commission update: Govt rejects DA merger, confirms pension reform review - The Economic Times (Google News)
+[2025-12-02]
+- 8th Pay commission BIG UPDATE: Finance Ministry clears doubt on pension revision, says 'No plan to merge existing DA with basic pay - MSN (Google News)
+
+[2025-12-02]
+- 8th Pay Commission To Make Recommendations On Pensions, Govt Says Amid Fears Of Exclusion - NDTV Profit (Google News)
 
 [2025-12-04]
 - 8th Pay Commission salary, pension hike: When will govt employees receive 8th CPC payments? - The Economic Times (Google News)
@@ -80,11 +65,26 @@ PROMPT INPUT (HEADLINES):
 [2025-12-07]
 - 8th Pay Commission: Why it may become the most expensive pay hike ever? EXPLAINED - ET Now (Google News)
 
-[2025-12-07]
-- 8th Pay Commission BIG update: MAJOR relief for pensioners as Modi govt approves pension revision, DA merger - india.com (Google News)
-
 [2025-12-09]
 - India News Today, Dec 9: Potential 8th Pay Commission Announcement - Meyka (Google News)
 
 [2025-12-09]
-- Government Drops BOMBSHELL on 8th Pay Commission: Millions of Employees & Pensioners Brace for Massive Salary & Pension Changes! - Whalesbook (Google News)
+- 8th pay commission: Govt shares major update in Lok Sabha. Here's what’s next for employees and pensioners - The Economic Times (Google News)
+
+[2025-12-09]
+- 8th Pay Commission update: What is the expected implementation date and fitment factor? Here's all we know - MSN (Google News)
+
+[2025-12-11]
+- 8th Pay Commission: When will it be implemented? Government responds | India News - Hindustan Times (Google News)
+
+[2025-12-13]
+- 8th Pay Commission: Will pensioners stop getting DA hikes under new Finance Act 2025? Govt clarifies - MSN (Google News)
+
+[2025-12-13]
+- 8th Pay Commission: Will pensioners’ DR continue to rise after 7th CPC's term ends on Dec 31, 2025? Big update - The Economic Times (Google News)
+
+[2025-12-14]
+- 8th pay commission: Railways plans cost-cutting to deal with higher wages, says report - Mint (Google News)
+
+[2025-12-14]
+- 8th Pay Commission: Will pensioners get DA hikes under new Finance Act 2025? Govt clarifies - Mint (Google News)
