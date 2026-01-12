@@ -6,7 +6,7 @@ Enhances scenes with concrete visual instructions
 import json
 from typing import Dict, Any, List
 from .base_agent import BaseAgent, AgentState
-from utils.llm_client import LLMClient
+from core.utils.llm_client import LLMClient
 
 
 class VisualPlannerAgent(BaseAgent):

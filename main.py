@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 from loguru import logger
-from workflows.news_video_workflow import NewsVideoWorkflow
+from core.workflows.news_video_workflow import NewsVideoWorkflow
 import json
 
 
@@ -47,7 +47,7 @@ def main():
     parser.add_argument(
         "--config",
         type=str,
-        default="config/settings.yaml",
+        default="core/config/settings.yaml",
         help="Path to configuration file"
     )
     

@@ -2,22 +2,22 @@
 
 from typing import Dict, Any
 from langgraph.graph import StateGraph, END
-from agents.base_agent import AgentState
+from core.agents.base_agent import AgentState
 
 # Content agents
-from agents.news_collection_agent import NewsCollectionAgent
-from agents.summarization_agent import SummarizationAgent
-from agents.script_writer_agent import ScriptWriterAgent
-from agents.scene_planner_agent import ScenePlannerAgent
+from core.agents.news_collection_agent import NewsCollectionAgent
+from core.agents.summarization_agent import SummarizationAgent
+from core.agents.script_writer_agent import ScriptWriterAgent
+from core.agents.scene_planner_agent import ScenePlannerAgent
 
 # Visual agents (NEW)
-from agents.visual_planner_agent import VisualPlannerAgent
-from agents.visual_asset_agent import VisualAssetAgent
+from core.agents.visual_planner_agent import VisualPlannerAgent
+from core.agents.visual_asset_agent import VisualAssetAgent
 
 # Video generation agents
-from agents.animation_generator_agent import AnimationGeneratorAgent
-from agents.voiceover_agent import VoiceoverAgent
-from agents.video_composer_agent import VideoComposerAgent
+from core.agents.animation_generator_agent import AnimationGeneratorAgent
+from core.agents.voiceover_agent import VoiceoverAgent
+from core.agents.video_composer_agent import VideoComposerAgent
 
 from loguru import logger
 import yaml

@@ -1,26 +1,0 @@
-=== Verifying Video Quality Overhaul ===
-
---- Testing Visual Asset Agent (Pollinations) ---
-Asset Path: temp\images\gen_596f67442140e081acda57dc7d098ebe.jpg
-
---- Testing Animation Generator Components ---
-Testing Lower Third creation...
-Lower Third clips: [(1920, 194), (222, 50), (100, 50)]
-Writing separate headline clip...
-MoviePy - Building video temp_verify/headline.mp4.
-MoviePy - Writing video temp_verify/headline.mp4
-
-frame_index:   0%| | frame_index:  18%|▏|                      MoviePy - Done !
-MoviePy - video ready temp_verify/headline.mp4
-Testing Full Scene...
-Traceback (most recent call last):
-  File "C:\Users\HP\Desktop\kartavya_submission\verify_overhaul.py", line 81, in verify
-    state = anim_agent.execute(state)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\HP\Desktop\kartavya_submission\agents\animation_generator_agent.py", line 35, in execute
-    clip_path = self._render_scene(scene, int(idx), state.topic)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\HP\Desktop\kartavya_submission\agents\animation_generator_agent.py", line 53, in _render_scene
-    if not image_path or not os.path.exists(image_path):
-                             ^^
-NameError: name 'os' is not defined. Did you forget to import 'os'

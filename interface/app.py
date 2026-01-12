@@ -10,13 +10,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Ensure imports work (add root to path)
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+import sys
+import os
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(root_dir)
 
-from workflows.news_video_workflow import NewsVideoWorkflow
+from core.workflows.news_video_workflow import NewsVideoWorkflow
 from loguru import logger
 
 # Constants
-CONFIG_PATH = "config/settings.yaml"
+CONFIG_PATH = os.path.join(root_dir, "core", "config", "settings.yaml")
 
 # ------------------------------------------------------------------
 # Page Config

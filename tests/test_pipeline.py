@@ -6,18 +6,20 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Ensure imports work
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(root_dir)
 
 load_dotenv()
 
-from agents.base_agent import AgentState
-from agents.summarization_agent import SummarizationAgent
-from agents.script_writer_agent import ScriptWriterAgent
-from agents.scene_planner_agent import ScenePlannerAgent
-from agents.visual_planner_agent import VisualPlannerAgent
+from core.agents.base_agent import AgentState
+from core.agents.summarization_agent import SummarizationAgent
+from core.agents.script_writer_agent import ScriptWriterAgent
+from core.agents.scene_planner_agent import ScenePlannerAgent
+from core.agents.visual_planner_agent import VisualPlannerAgent
 
 def load_config():
-    with open("config/settings.yaml", "r") as f:
+    config_path = os.path.join(root_dir, "core", "config", "settings.yaml")
+    with open(config_path, "r") as f:
         return yaml.safe_load(f)
 
 def test_pipeline():
