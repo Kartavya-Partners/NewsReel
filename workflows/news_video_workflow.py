@@ -163,9 +163,15 @@ class NewsVideoWorkflow:
     # -------- Runner --------
 
     def run(self, topic: str, category: str = None) -> Dict[str, Any]:
-        logger.info(f"Starting workflow for topic: {topic}")
+        import uuid
+        run_id = str(uuid.uuid4())[:8]  # Short ID
+        logger.info(f"Starting workflow run: {run_id} for topic: {topic}")
 
-        initial_state = AgentState(topic=topic, category=category)
+        initial_state = AgentState(
+            run_id=run_id,
+            topic=topic, 
+            category=category
+        )
         final_state = self.graph.invoke(initial_state)
 
         result = {

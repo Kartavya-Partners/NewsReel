@@ -41,7 +41,7 @@ def main():
         "--category",
         type=str,
         default=None,
-        help="News category (e.g., 'technology', 'politics', 'sports')"
+        help="News category (e.g., 'technology', 'politics', 'sports', 'Geography', 'Environment', 'Health', 'Education', 'Geopolitics', 'Economy', 'Business')"
     )
     
     parser.add_argument(

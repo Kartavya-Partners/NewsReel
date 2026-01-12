@@ -16,9 +16,9 @@ This project demonstrates a complete **multi-agent AI pipeline** that:
 - **Python 3.10+** - Core language
 - **LangGraph** - Agentic workflow orchestration
 - **Ollama (LLaMA 3/Mistral)** - Local LLM for content generation
-- **Manim** - Professional animation generation
+- **MoviePy v2** - Professional video composition & effects
 - **MoviePy** - Video composition
-- **Coqui TTS** - Natural text-to-speech
+- **Edge TTS** - Natural text-to-speech
 - **Streamlit** - Interactive web interface
 - **RSS/GNews API** - News sources (free tier)
 
@@ -93,7 +93,7 @@ Each agent has a specific responsibility:
 3. **Summarization Agent** - Creates concise factual summaries
 4. **Script Writer Agent** - Converts to natural narration
 5. **Scene Planner Agent** - Breaks into visual scenes
-6. **Animation Generator Agent** - Creates animations with Manim
+6. **Animation Generator Agent** - Creates Ken Burns effects & motion using MoviePy
 7. **Voiceover Agent** - Generates TTS audio
 8. **Video Composer Agent** - Combines everything into final video
 

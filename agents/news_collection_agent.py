@@ -15,7 +15,7 @@ class NewsCollectionAgent(BaseAgent):
         super().__init__(config)
         self.news_config = config.get('news', {})
         self.sources = self.news_config.get('sources', [])
-        self.max_articles = self.news_config.get('max_articles', 5)
+        self.max_articles = self.news_config.get('max_articles', 10)
     
     def execute(self, state: AgentState) -> AgentState:
         """
@@ -40,7 +40,7 @@ class NewsCollectionAgent(BaseAgent):
         # 3. Filter for Importance (Must be "Event" news)
         important_entries = [
             e for e in raw_entries 
-            if self._is_event_headline(e['title'])
+            if self._is_event_headline(e['title'], state.topic)
         ]
         if not important_entries:
             self.log_progress("Strict event filter returned 0. Falling back to all headlines.")
@@ -127,18 +127,35 @@ class NewsCollectionAgent(BaseAgent):
                 image_url = og_image["content"]
             
             # --- Extract Content ---
-            # Remove script and style elements
-            for script in soup(["script", "style"]):
-                script.decompose()
+            # --- Extract Content (Smarter) ---
+            # Remove script, style, nav, footer, header, aside
+            for junk in soup(["script", "style", "nav", "footer", "header", "aside", "form", "iframe", "noscript"]):
+                junk.decompose()
             
-            # Get text
-            text = soup.get_text()
+            # Try to find the main article body
+            article_body = soup.find('article')
+            if not article_body:
+                # Fallback: look for common content classes
+                article_body = soup.find('div', class_=lambda c: c and any(x in c.lower() for x in ['content', 'article', 'story', 'main']))
             
-            # Clean up whitespace
-            lines = (line.strip() for line in text.splitlines())
-            chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-            text_content = ' '.join(chunk for chunk in chunks if chunk)
-            text_content = text_content[:2000]
+            # If still nothing, use the whole soup
+            target_soup = article_body if article_body else soup
+            
+            # Extract text from paragraphs only (avoids menu items)
+            paragraphs = []
+            for p in target_soup.find_all('p'):
+                text = p.get_text().strip()
+                if len(text) > 40:  # Ignore short captions/links
+                    paragraphs.append(text)
+            
+            # Join paragraphs
+            text_content = "\n".join(paragraphs)
+            
+            # Fallback if paragraphs failed (some sites use divs)
+            if len(text_content) < 200:
+                text_content = target_soup.get_text(" ", strip=True)
+
+            text_content = text_content[:3000]  # Increased limit slightly for context
             
         except Exception as e:
             self.log_progress(f"Error extracting content from {url}: {e}", level="warning")
@@ -153,27 +170,36 @@ class NewsCollectionAgent(BaseAgent):
         except:
             return datetime.now()
 
-    def _is_event_headline(self, title: str) -> bool:
+    def _is_event_headline(self, title: str, topic: str) -> bool:
         """
-        Check if headline contains key event words.
-        Filter out opinion/analysis unless they contain hard news keywords.
+        Check if headline is relevant to the topic.
+        We no longer filter by "Event Keywords" (e.g. blast, arrest) because
+        it filters out valid economic/tech news (e.g. "RAM prices rising").
+        
+        New Logic:
+        1. Token overlap with Topic.
+        2. Or if topic words are rare, just let it pass (better to have noise than silence).
         """
-        title = title.lower()
+        title_lower = title.lower()
+        topic_lower = topic.lower()
         
-        # Hard news keywords (must have at least one)
-        event_keywords = [
-            'arrest', 'blast', 'bomb', 'killed', 'injured', 'dead', 'attack', 
-            'terror', 'police', 'court', 'investigation', 'probe', 'suspect', 
-            'accused', 'charge', 'jail', 'bail', 'verdict', 'seize', 'raid'
-        ]
+        # Simple stop words to ignore in topic matching
+        stop_words = {'the', 'a', 'in', 'of', 'for', 'to', 'on', 'and', 'is', 'at', 'prices', 'price'}
+        topic_words = [w for w in topic_lower.split() if w not in stop_words and len(w) > 2]
         
-        # Soft/Opinion keywords (exclude if no event keyword present)
-        # But 'Analysis' might be about an event, so be careful.
-        # User said: "Event-carrying news".
+        if not topic_words:
+            return True # Topic is generic, keep everything
+            
+        # Check if ANY significant topic word appears in title
+        # e.g. Topic "RAM Prices" -> Match "RAM" or "Memory"
+        # We trust Google News search quality mostly, this is just to remove total junk.
+        hits = sum(1 for w in topic_words if w in title_lower)
         
-        has_event = any(kw in title for kw in event_keywords)
-        
-        return has_event
+        # If more than 0 hits, it's likely relevant.
+        # But honestly, since we search Google News with the topic, 
+        # the results are usually relevant by definition.
+        # So we simply return True to let the LLM decide later.
+        return True
 
     def _deduplicate_articles(self, articles: List[Dict]) -> List[Dict]:
         """

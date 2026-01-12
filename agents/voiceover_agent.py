@@ -35,13 +35,19 @@ class VoiceoverAgent(VideoGeneratorAgent):
         if not self.validate_input(state, ['scene_plan']):
             return state
         
-        self.log_progress("Generating voiceover audio")
+        # Determine isolation directory
+        run_id = getattr(state, 'run_id', 'default')
+        run_audio_dir = self.audio_cache_dir / run_id
+        run_audio_dir.mkdir(parents=True, exist_ok=True)
+        
+        self.log_progress(f"Generating voiceover audio (Run ID: {run_id})")
         
         audio_files = []
         
         for i, scene in enumerate(state.scene_plan):
             self.log_progress(f"Creating audio for scene {i+1}/{len(state.scene_plan)}")
-            audio_path = self._generate_audio(scene, i)
+            # Pass the isolated directory
+            audio_path = self._generate_audio(scene, i, run_audio_dir)
             audio_files.append(str(audio_path))
         
         state.audio_files = audio_files
@@ -49,13 +55,14 @@ class VoiceoverAgent(VideoGeneratorAgent):
         
         return state
     
-    def _generate_audio(self, scene: Dict[str, Any], scene_index: int) -> Path:
+    def _generate_audio(self, scene: Dict[str, Any], scene_index: int, cache_dir: Path) -> Path:
         """
         Generate audio with Speed Control and SSML Pause support.
         """
         import imageio_ffmpeg
         import subprocess
         from moviepy import AudioFileClip, concatenate_audioclips
+        import time  # For retry backoff
         import re
         import os
         
@@ -66,7 +73,7 @@ class VoiceoverAgent(VideoGeneratorAgent):
         if not narration_text.strip():
             return self._create_silent_audio(scene.get('duration', 10), scene_index)
             
-        final_output_path = self.temp_dir / f"audio_{scene_index:03d}.mp3"
+        final_output_path = cache_dir / f"audio_{scene_index:03d}.mp3"
         ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
         
         # 1. Parse Segments (Text vs Break)
@@ -103,35 +110,43 @@ class VoiceoverAgent(VideoGeneratorAgent):
                     continue
                     
                 # Generate Raw Audio
-                raw_path = self.temp_dir / f"temp_raw_{scene_index}_{i}.mp3"
+                raw_path = cache_dir / f"temp_raw_{scene_index}_{i}.mp3"
                 
                 if self.engine == 'edge-tts':
                     # Edge TTS (CLI) - High Quality Neural Voice
-                    # Command: edge-tts --text "..." --write-media "file.mp3" --voice "..."
-                    try:
-                        subprocess.run([
-                            'edge-tts',
-                            '--text', clean_text,
-                            '--write-media', str(raw_path),
-                            '--voice', self.voice
-                        ], check=True, capture_output=True)
-                    except subprocess.CalledProcessError as e:
-                        self.log_progress(f"Edge TTS failed: {e.stderr}", level="error")
-                        # Fallback to gTTS if Edge fails
-                        tts = gTTS(text=clean_text, lang='en', slow=False)
-                        tts.save(str(raw_path))
-                    except FileNotFoundError:
-                        self.log_progress("edge-tts binary not found. Is it installed?", level="error")
-                        tts = gTTS(text=clean_text, lang='en', slow=False)
-                        tts.save(str(raw_path))
+                    # RETRY LOGIC ADDED to prevent falling back to female voice on transient errors
+                    success = False
+                    for attempt in range(3):
+                        try:
+                            subprocess.run([
+                                'edge-tts',
+                                '--text', clean_text,
+                                '--write-media', str(raw_path),
+                                '--voice', self.voice
+                            ], check=True, capture_output=True)
+                            success = True
+                            break
+                        except subprocess.CalledProcessError as e:
+                            self.log_progress(f"Edge TTS attempt {attempt+1} failed: {e.stderr}", level="warning")
+                            time.sleep(1 * (attempt+1))
+                        except FileNotFoundError:
+                             self.log_progress("edge-tts binary not found. Is it installed?", level="error")
+                             # No point retrying if binary missing
+                             break
+                    
+                    if not success:
+                         self.log_progress(f"Edge TTS failed after 3 attempts. Falling back to gTTS.", level="error")
+                         tts = gTTS(text=clean_text, lang='en', slow=False)
+                         tts.save(str(raw_path))
                 else:
                     # Standard gTTS
                     tts = gTTS(text=clean_text, lang='en', slow=False)
                     tts.save(str(raw_path))
                 
                 # Apply Speed (1.05x) using ffmpeg 'atempo'
+                # Apply Speed (1.05x) using ffmpeg 'atempo'
                 # User asked for faster narration (Brisk News).
-                slow_path = self.temp_dir / f"temp_slow_{scene_index}_{i}.mp3"
+                slow_path = cache_dir / f"temp_slow_{scene_index}_{i}.mp3"
                 cmd = [
                     ffmpeg_exe, '-y', '-v', 'error',
                     '-i', str(raw_path),

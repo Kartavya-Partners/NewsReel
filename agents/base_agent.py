@@ -10,6 +10,7 @@ class AgentState(BaseModel):
     """Base state model for agent communication."""
 
     # ---- Core pipeline ----
+    run_id: str  # Unique session ID to isolate artifacts
     topic: str
     category: Optional[str] = None
     raw_articles: Optional[list] = None

@@ -138,7 +138,7 @@ python main.py --topic "Artificial Intelligence in Healthcare"
 
 1. Install animation tools:
    ```bash
-   pip install manim moviepy
+   pip install moviepy
    ```
 
 2. Install TTS:

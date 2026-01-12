@@ -32,7 +32,12 @@ class VisualAssetAgent(BaseAgent):
         if not self.validate_input(state, ["scene_plan"]):
             return state
 
-        self.log_progress("Fetching visual assets")
+        # Determine isolation directory
+        run_id = getattr(state, 'run_id', 'default')
+        run_dir = self.asset_dir / run_id
+        run_dir.mkdir(parents=True, exist_ok=True)
+        
+        self.log_progress(f"Fetching visual assets (Run ID: {run_id})")
         
         # --- Collect Real Images from News Articles ---
         real_images = []
@@ -57,7 +62,8 @@ class VisualAssetAgent(BaseAgent):
                     try:
                         target_url = real_images[idx % len(real_images)]
                         # Tuple unpacking: (main_path, backup_path)
-                        result_path, backup = self._fetch_real_image(target_url, idx)
+                        # Pass run_dir to isolate files
+                        result_path, backup = self._fetch_real_image(target_url, idx, run_dir)
                         
                         if result_path:
                              image_path = result_path
@@ -79,7 +85,7 @@ class VisualAssetAgent(BaseAgent):
                     query += ", no text, no typography, 8k, masterpiece, detailed, photorealistic"
                     
                     try:
-                         image_path = self._fetch_pollinations_image(query)
+                         image_path = self._fetch_pollinations_image(query, run_dir)
                          source = "generated_pollinations"
                     except RuntimeError:
                         self.log_progress(f"Scene {idx+1}: AI Gen detailed failed. Retrying simplified...", level="warning")
@@ -87,7 +93,7 @@ class VisualAssetAgent(BaseAgent):
                         # Strip complex params (after "STYLE:")
                         simple_query = query.split(", STYLE:")[0] + ", photo"
                         try:
-                            image_path = self._fetch_pollinations_image(simple_query)
+                            image_path = self._fetch_pollinations_image(simple_query, run_dir)
                             source = "generated_pollinations_simple"
                         except Exception:
                             self.log_progress(f"Scene {idx+1}: AI Gen simple failed.", level="error")
@@ -96,10 +102,27 @@ class VisualAssetAgent(BaseAgent):
                 if not image_path and backup_real_path:
                     try:
                         self.log_progress(f"Scene {idx+1}: Recovering Low-Res Backup...", level="info")
-                        image_path = self._generate_upscaled_composite(backup_real_path, idx)
+                        image_path = self._generate_upscaled_composite(backup_real_path, idx, run_dir)
                         source = "real_news_recovered"
                     except Exception as e:
                          self.log_progress(f"Backup recovery failed: {e}", level="error")
+
+                # STRATEGY 4.5: Emergency Real Image (Any relevant image)
+                # If AI failed and we have real news images, use one!
+                if not image_path and real_images:
+                     self.log_progress(f"Scene {idx+1}: AI Failed. Using random real news image as fallback.", level="warning")
+                     try:
+                         # Pick a deterministic random image based on scene index
+                         fallback_url = real_images[idx % len(real_images)]
+                         res, backup = self._fetch_real_image(fallback_url, idx, run_dir)
+                         if res:
+                             image_path = res
+                             source = "real_news_fallback"
+                         elif backup:
+                             image_path = self._generate_upscaled_composite(backup, idx, run_dir)
+                             source = "real_news_fallback_lowres"
+                     except Exception as e:
+                         self.log_progress(f"Real fallback failed: {e}", level="error")
 
                 # STRATEGY 5: Text Fallback (Last Resort)
                 if not image_path:
@@ -111,7 +134,7 @@ class VisualAssetAgent(BaseAgent):
                 }
             except Exception as e:
                 # Dynamic Fallback: Generate a text slide
-                fallback_path = self._generate_dynamic_fallback(scene, idx)
+                fallback_path = self._generate_dynamic_fallback(scene, idx, run_dir)
                 scene["visual_assets"] = {
                     "image_path": str(fallback_path),
                     "source": "fallback_dynamic"
@@ -124,7 +147,7 @@ class VisualAssetAgent(BaseAgent):
         self.log_progress("Visual assets attached")
         return state
 
-    def _generate_dynamic_fallback(self, scene: Dict[str, Any], idx: int) -> Path:
+    def _generate_dynamic_fallback(self, scene: Dict[str, Any], idx: int, run_dir: Path) -> Path:
         """Generate a simple text slide when AI generation fails."""
         from PIL import Image, ImageDraw, ImageFont
         
@@ -168,17 +191,17 @@ class VisualAssetAgent(BaseAgent):
             print(f"Fallback font error: {e}")
             
         # 4. Save
-        output_path = self.asset_dir / f"fallback_{idx}.jpg"
+        output_path = run_dir / f"fallback_{idx}.jpg"
         img.save(output_path)
         return output_path
 
-    def _generate_upscaled_composite(self, small_img_path: Path, idx: int) -> Path:
+    def _generate_upscaled_composite(self, small_img_path: Path, idx: int, run_dir: Path) -> Path:
         """
         Recover a small image by creating a TV-style blurred background composite.
         """
         from PIL import Image, ImageFilter, ImageEnhance
         
-        output_path = self.asset_dir / f"recovered_{idx}.jpg"
+        output_path = run_dir / f"recovered_{idx}.jpg"
         target_size = (1280, 720)
         
         try:
@@ -212,11 +235,11 @@ class VisualAssetAgent(BaseAgent):
 
     # --------------------------------------------------------
 
-    def _fetch_real_image(self, url: str, idx: int) -> Path:
+    def _fetch_real_image(self, url: str, idx: int, run_dir: Path) -> Path:
         """Download a real image from a URL."""
         import hashlib
         key = hashlib.md5(url.encode()).hexdigest()
-        image_path = self.asset_dir / f"real_{key}.jpg"
+        image_path = run_dir / f"real_{key}.jpg"
         
         if image_path.exists():
             return image_path
@@ -233,7 +256,7 @@ class VisualAssetAgent(BaseAgent):
                      width, height = img.size
                      if width < 800 or height < 600:
                          # DO NOT DELETE. Rename to backup.
-                         backup_path = self.asset_dir / f"backup_real_{key}.jpg"
+                         backup_path = run_dir / f"backup_real_{key}.jpg"
                          if image_path.exists():
                              image_path.replace(backup_path)
                          # Return None to signal "Main image failed", but backup exists
@@ -248,18 +271,21 @@ class VisualAssetAgent(BaseAgent):
              return None, None
         raise RuntimeError(f"Status {response.status_code}")
 
-    def _fetch_pollinations_image(self, query: str) -> Path:
+    def _fetch_pollinations_image(self, query: str, run_dir: Path) -> Path:
         import hashlib
         key = hashlib.md5(query.encode()).hexdigest()
-        image_path = self.asset_dir / f"gen_{key}.jpg"
+        image_path = run_dir / f"gen_{key}.jpg"
 
         if image_path.exists():
             return image_path
 
         # Use Pollinations.ai as a reliable, free generative source
+        # Truncate query to avoid URL length issues (HTTP 414/500)
+        safe_query = query[:450] if len(query) > 450 else query
+        
         # Encode query to be URL safe
         import urllib.parse
-        encoded_query = urllib.parse.quote(query)
+        encoded_query = urllib.parse.quote(safe_query)
         url = f"https://image.pollinations.ai/prompt/{encoded_query}?width=1280&height=720&nologo=true"
         
         # Increased timeout to 120s (User Request)

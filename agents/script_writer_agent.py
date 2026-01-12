@@ -57,7 +57,7 @@ class ScriptWriterAgent(BaseAgent):
 Target length: {target_words} words.
 
 STRICT JOURNALISTIC RULES (5W+1H):
-1. **WHAT & WHERE FIRST**: Start immediately with the event and location. "Protests erupted in New Delhi..."
+1. **LEAD WITH THE NEWS**: Start immediately with the main event/update. Mention location ONLY if clearly stated in the summary.
 2. **FACT-BASED**: Use attribution ("According to police", "Reports suggest"). NEVER guess.
 3. **NEUTRAL TONE**: No "tragic/heartbreaking". Be serious but calm.
 4. **SHORT SENTENCES**: Write for the ear. Simple words. 

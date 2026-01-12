@@ -45,6 +45,7 @@ class LLMClient:
                     "model": self.model,
                     "prompt": prompt,
                     "stream": False,
+                    "context": [],  # FORCE STATELESSNESS: Clear any potential history
                     "options": {
                         "temperature": self.temperature,
                         "num_predict": self.max_tokens
