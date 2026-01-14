@@ -41,7 +41,7 @@ AI NewsReel is a fully autonomous video generation pipeline that turns any news 
 ## 📦 Installation
 
 ```bash
-git clone https://github.com/Kartavya-Partners/NewsReel.git
+git clone https://github.com/chaudhary-pawan/NewsReel.git
 cd NewsReel
 python -m venv venv
 # Activate venv:
@@ -58,7 +58,7 @@ GOOGLE_API_KEY=your_gemini_key_here
 
 **Run:**
 ```bash
-python -m streamlit run app.py
+python -m streamlit run interface/app.py
 ```
 
 ## 🏗️ Architecture
@@ -74,14 +74,17 @@ Final Video Output
 
 ```
 NewsReel/
-├── agents/              # Individual agent implementations
-├── workflows/           # LangGraph workflow definitions
-├── utils/              # Helper functions
-├── assets/             # Images, icons, templates
-├── output/             # Generated videos
-├── config/             # Configuration files
-├── app.py              # Streamlit UI
-└── main.py             # CLI entry point
+├── core/                # Backend Logic (Agents, Workflows)
+│   ├── agents/          # Individual agent implementations
+│   ├── workflows/       # LangGraph workflow definitions
+│   ├── utils/           # Helper functions
+│   └── config/          # Configuration files
+├── interface/           # Frontend (Streamlit)
+│   ├── app.py           # Streamlit UI Entry Point
+│   └── assets/          # Images, icons
+├── tests/               # Verification Scripts
+├── output/              # Generated videos
+└── main.py              # CLI entry point
 ```
 
 ## 📄 License
@@ -90,5 +93,5 @@ MIT License - Free for educational and commercial use
 
 ## 👨‍💻 Author
 
-Created by [Kartavya Partners](https://github.com/Kartavya-Partners) as a demonstration of modern Agentic AI + GenAI capabilities.
+Created by [Chaudhary Pawan](https://github.com/chaudhary-pawan) as a demonstration of modern Agentic AI + GenAI capabilities.
 
