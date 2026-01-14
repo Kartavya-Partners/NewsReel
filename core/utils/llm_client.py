@@ -36,33 +36,34 @@ class LLMClient:
         else:
             logger.info(f"Initialized Ollama Client with model: {self.model}")
     
-    def generate(self, prompt: str, system_prompt: Optional[str] = None, max_retries: int = 2) -> str:
+    def generate(self, prompt: str, system_prompt: Optional[str] = None, max_retries: int = 2, model: Optional[str] = None) -> str:
         """
         Generate text using the configured LLM provider.
         """
         if self.provider == "gemini":
-            return self._generate_gemini(prompt, system_prompt, max_retries)
+            return self._generate_gemini(prompt, system_prompt, max_retries, model)
         else:
             return self._generate_ollama(prompt, system_prompt, max_retries)
 
-    def _generate_gemini(self, prompt: str, system_prompt: Optional[str], max_retries: int) -> str:
+    def _generate_gemini(self, prompt: str, system_prompt: Optional[str], max_retries: int, model: Optional[str] = None) -> str:
         """Generate text using Google Gemini with 429 Retry Logic."""
         
+        target_model = model or self.model
         current_attempt = 0
         final_error = None
         
         while current_attempt <= max_retries:
             try:
                 # Re-init model each time (stateless)
-                model = genai.GenerativeModel(
-                    model_name=self.model,
+                model_instance = genai.GenerativeModel(
+                    model_name=target_model,
                     generation_config=genai.GenerationConfig(
                         temperature=self.temperature,
                         max_output_tokens=self.max_tokens,
                     )
                 )
                 
-                logger.debug(f"Sending request to Gemini: {self.model} (Attempt {current_attempt+1})")
+                logger.debug(f"Sending request to Gemini: {target_model} (Attempt {current_attempt+1})")
                 
                 # Base Rate Limit Protection (20s) - proactive wait
                 time.sleep(20)
@@ -71,7 +72,7 @@ class LLMClient:
                 if system_prompt:
                     final_prompt = f"System Instruction: {system_prompt}\n\nUser Request: {prompt}"
                     
-                response = model.generate_content(final_prompt)
+                response = model_instance.generate_content(final_prompt)
                 
                 if response.text:
                     logger.debug(f"Received Gemini response ({len(response.text)} chars)")

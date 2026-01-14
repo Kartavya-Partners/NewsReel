@@ -20,7 +20,7 @@ AI NewsReel is a fully autonomous video generation pipeline that turns any news 
 ## 🛠️ Tech Stack
 
 *   **Core:** Python 3.10+
-*   **LLM:** Google Gemini 2.0 Flash Lite (`google-generativeai`)
+*   **LLM:** Google Gemini 2.5 Flash (`google-generativeai`)
 *   **Frontend:** Streamlit
 *   **Video Engine:** MoviePy
 *   **Audio:** Edge-TTS

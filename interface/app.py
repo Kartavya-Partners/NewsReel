@@ -155,9 +155,26 @@ if generate_btn and topic:
             elif "VideoComposerAgent" in message: progress_bar.progress(90)
             elif "VIDEO GENERATED" in message: progress_bar.progress(100)
 
+            # Check for immediate result feedback
+            if "[RESULT] SUMMARY:" in message:
+                content = message.split("[RESULT] SUMMARY:", 1)[1].strip()
+                with summary_container.container():
+                     with st.expander("📄 Generated Summary", expanded=False):
+                        st.info(content)
+            
+            if "[RESULT] NARRATION:" in message:
+                content = message.split("[RESULT] NARRATION:", 1)[1].strip()
+                with narration_container.container():
+                    with st.expander("🎙️ Generated Script", expanded=True):
+                        st.success(content)
+
     # Hack loguru to print to streamlit
     sink = StreamlitSink()
     logger.add(sink.write, format="{time:HH:mm:ss} | {message}")
+
+    # placeholders for results
+    summary_container = st.empty()
+    narration_container = st.empty()
 
     try:
         with st.status("🚀 Production Pipeline Running...", expanded=True) as status:

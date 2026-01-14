@@ -17,7 +17,7 @@ kartavya_submission/
 │
 ├── utils/                          # Helper utilities
 │   ├── __init__.py
-│   └── llm_client.py              # Ollama LLM client
+│   └── llm_client.py              # Gemini LLM client
 │
 ├── config/                         # Configuration files
 │   └── settings.yaml              # Main configuration

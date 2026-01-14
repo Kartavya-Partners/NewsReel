@@ -34,6 +34,9 @@ class ScriptWriterAgent(BaseAgent):
         
         state.narration = narration
         self.log_progress(f"Generated narration ({len(narration.split())} words)")
+
+        # Log for UI display
+        self.log_progress(f"[RESULT] NARRATION: {narration}")
         
         return state
     
@@ -75,7 +78,10 @@ Summary: {summary}
 
 Narration Script:"""
 
-        narration = self.llm_client.generate(prompt)
+        # Get specific model for script writing if configured
+        model_override = self.config.get('llm', {}).get('agents', {}).get('script_writer')
+
+        narration = self.llm_client.generate(prompt, model=model_override)
         return self._clean_narration(narration)
 
     def _clean_narration(self, text: str) -> str:

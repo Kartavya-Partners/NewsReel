@@ -38,6 +38,9 @@ class SummarizationAgent(BaseAgent):
         state.summary = summary
         self.log_progress(f"Generated summary ({len(summary.split())} words)")
         
+        # Log for UI display
+        self.log_progress(f"[RESULT] SUMMARY: {summary}")
+        
         return state
     
     def _combine_articles(self, articles: list) -> str:
@@ -104,5 +107,8 @@ HEADLINES:
 
 FINAL NEWS SUMMARY:"""
 
-        summary = self.llm_client.generate(prompt)
+        # Get specific model for summarization if configured
+        model_override = self.config.get('llm', {}).get('agents', {}).get('summarization')
+        
+        summary = self.llm_client.generate(prompt, model=model_override)
         return summary.strip()
