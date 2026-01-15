@@ -1,42 +1,44 @@
 # 🎬 AI NewsReel Generator
 
-**Automated "Text-to-Video" Agentic System using Google Gemini & Python.**
+**Automated "Text-to-Video" Agentic System using Google Gemini & Wan 2.5.**
 
 AI NewsReel is a fully autonomous video generation pipeline that turns any news topic into a professional, 60-second news explainer video suitable for YouTube Shorts, Instagram Reels, or TikTok. It leverages a **Multi-Agent Architecture** to research, write, plan, and compose videos without human intervention.
 
 ## 🚀 Key Features
 
 *   **🤖 Multi-Agent Orchestration:** Four specialized AI agents work in sequence:
-    *   **Researcher:** Fetches and filters real-time news from Google News RSS.
-    *   **Scriptwriter:** Drafts broadcast-quality narration (BBC/Reuters style).
-    *   **Scene Planner:** Segment scripts into strict 5-6 second scenes for maximum engagement.
-    *   **Visual Director:** Generates accurate AI image prompts (Unreal Engine style) using Gemini 2.0.
-*   **⚡ Powered by Gemini 2.0:** Optimized for the "Gemini 2.0 Flash Lite" model with smart rate-limiting and auto-retry logic to maximize Free Tier usage.
-*   **🎨 Dynamic Visuals:** Uses **Pollinations.ai** for uncensored, high-quality AI image generation, with fallback to real news images.
+    *   **Researcher:** Fetches real-time news (Strict "Last 2 Years" filter) from Google News RSS.
+    *   **Scriptwriter:** Drafts broadcast-quality narration (Journalistic 5W+1H style) with complete endings.
+    *   **Scene Planner:** Segments scripts into a strict **5-scene** structure for maximum engagement.
+    *   **Visual Director:** Generates accurate AI video prompts using a single-shot Gemini 2.0 call.
+*   **⚡ Optimized for Free Tier:**
+    *   **Smart Quota Handling:** Detects `429 Daily Limit` errors and stops gracefully.
+    *   **Batch Processing:** Visual Planner uses a single API call for all scenes (80% quota reduction).
+    *   **Token Optimization:** Increased limits to prevent narration truncation.
+*   **🎥 Wan 2.5 Video Generation:** Integrates **Wan 2.1 (Turbo)** via PiAPI to generate actual high-quality video clips, not just static images.
 *   **🗣️ Professional Voiceovers:** Integrated **Edge-TTS** for ultra-realistic neural voice narration.
-*   **🎥 Automated Editing:** Uses **MoviePy** to stitch images, audio, and transitions into a final MP4, complete with "Zoom/Pan" Ken Burns effects.
-*   **📺 Streamlit Dashboard:** A user-friendly UI to track agent progress live and view a persistent gallery of generated videos.
+*   **📺 Streamlit Dashboard:** A user-friendly UI with **persistent full-history logging** to track agent progress live.
 
 ## 🛠️ Tech Stack
 
 *   **Core:** Python 3.10+
-*   **LLM:** Google Gemini 2.5 Flash (`google-generativeai`)
+*   **LLM:** Google Gemini 2.5 Flash (`google-genai`)
+*   **Video Gen:** Wan 2.1 / WanX (via PiAPI)
 *   **Frontend:** Streamlit
 *   **Video Engine:** MoviePy
 *   **Audio:** Edge-TTS
-*   **Visuals:** Pollinations.ai API & DuckDuckGo Images
 *   **Config:** YAML & Pydantic for rigid type validation
 
 ## ⚙️ How It Works
 
-1.  **Input:** User provides a topic (e.g., "8th Pay Commission").
+1.  **Input:** User provides a topic (e.g., "Aravali Protest").
 2.  **Process:**
-    *   System scrapes latest articles.
-    *   Summarizes facts into a 150-word script.
-    *   Splits script into ~10 visual scenes.
-    *   Generates or fetches relevant images for each scene.
-    *   Synthesizes voiceover.
-3.  **Output:** A polished 1080p vertical/horizontal video file ready for upload.
+    *   **NewsCollectionAgent:** Scrapes relevant articles using a 2-year recency filter.
+    *   **SummarizationAgent:** Creates a factual summary (no 2018 noise).
+    *   **ScriptWriterAgent:** Writes a 5-scene script with a definitive conclusion.
+    *   **VisualAssetAgent:** Generates videos using Wan 2.5 (or falls back to images).
+    *   **VideoComposerAgent:** Stitches everything into a final `.mp4`.
+3.  **Output:** A polished 1080p vertical video file.
 
 ## 📦 Installation
 
@@ -51,22 +53,33 @@ pip install -r requirements.txt
 ```
 
 **Configuration:**
-Create a `.env` file and add your Google API Key:
+Create a `.env` file and add your Keys:
 ```env
+# Gemini (Required for Agents)
 GOOGLE_API_KEY=your_gemini_key_here
+
+# PiAPI (Required for Wan 2.5 Video)
+PIAPI_API_KEY=your_piapi_key_here
 ```
 
 **Run:**
 ```bash
-python -m streamlit run interface/app.py
+# GUI Mode
+streamlit run interface/app.py
+
+# CLI Mode
+python main.py --topic "Your Topic Here"
 ```
 
 ## 🏗️ Architecture
 
 ```
-User Input → News Collection Agent → Content Filtering Agent → 
-Summarization Agent → Script Writer Agent → Scene Planner Agent → 
-Visual Asset Agent → Voiceover Agent → Video Composer Agent → 
+User Input → News Collection Agent (Recency Filter) → 
+Summarization Agent (Journalistic Tone) → 
+Script Writer Agent (Complete Endings) → 
+Scene Planner Agent (Max 5 Scenes) → 
+Visual Asset Agent (Wan 2.5 Video) → 
+Voiceover Agent → Video Composer Agent → 
 Final Video Output
 ```
 
@@ -77,12 +90,11 @@ NewsReel/
 ├── core/                # Backend Logic (Agents, Workflows)
 │   ├── agents/          # Individual agent implementations
 │   ├── workflows/       # LangGraph workflow definitions
-│   ├── utils/           # Helper functions
+│   ├── utils/           # Helper functions (WanClient, LLMClient)
 │   └── config/          # Configuration files
 ├── interface/           # Frontend (Streamlit)
 │   ├── app.py           # Streamlit UI Entry Point
-│   └── assets/          # Images, icons
-├── tests/               # Verification Scripts
+├── tests/               # Verification Scripts (probe_wan_api.py)
 ├── output/              # Generated videos
 └── main.py              # CLI entry point
 ```
@@ -94,4 +106,3 @@ MIT License - Free for educational and commercial use
 ## 👨‍💻 Author
 
 Created by [Chaudhary Pawan](https://github.com/chaudhary-pawan) as a demonstration of modern Agentic AI + GenAI capabilities.
-
