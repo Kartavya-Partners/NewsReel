@@ -39,7 +39,7 @@ class SummarizationAgent(BaseAgent):
         self.log_progress(f"Generated summary ({len(summary.split())} words)")
         
         # Log for UI display
-        self.log_progress(f"[RESULT] SUMMARY: {summary}")
+        self.log_progress(f"\n{'='*40}\nGENERATED SUMMARY:\n{summary}\n{'='*40}")
         
         return state
     
@@ -101,6 +101,7 @@ STYLE:
 - Factual
 - Newsroom tone (BBC / Reuters)
 - No storytelling, no opinions
+- CRITICAL: Ensure the summary ends with a complete sentence describing the current status, future implications, or what is expected next.
 
 HEADLINES:
 {text}

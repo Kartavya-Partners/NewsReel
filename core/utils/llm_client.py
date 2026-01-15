@@ -20,7 +20,7 @@ class LLMClient:
         self.provider = config.get('provider', 'ollama')
         self.model = config.get('model', 'llama3')
         self.temperature = config.get('temperature', 0.7)
-        self.max_tokens = config.get('max_tokens', 1000)
+        self.max_tokens = config.get('max_tokens', 4000) # Increased to avoid truncation
         self.base_url = config.get('base_url', 'http://localhost:11434')
         self.timeout = config.get('timeout', 30)
         
@@ -86,16 +86,21 @@ class LLMClient:
                 
                 # Check for Quota Limit (429)
                 if "429" in error_str or "quota" in error_str.lower():
-                    # High wait time for FREE TIER recovery (some need 60s)
-                    wait_time = 65 
-                    logger.warning(f"Gemini Quota Exceeded (429). Sleeping {wait_time}s before retry {current_attempt+1}/{max_retries}...")
+                    # Check for DAILY vs RATE limit
+                    if "PerDay" in error_str or "FreeTier" in error_str or "limit: 20" in error_str:
+                        logger.critical("Gemini DAILY Quota Exceeded. Stopping retries.")
+                        raise ConnectionError(f"DAILY_QUOTA_EXCEEDED: {error_str}")
+                    
+                    # Rate Limit (Per Minute) - Wait and Retry
+                    wait_time = 30 
+                    logger.warning(f"Rate Limit 429. Sleeping {wait_time}s before retry {current_attempt+1}/{max_retries}...")
                     time.sleep(wait_time)
                     current_attempt += 1
                 else:
                     logger.error(f"Gemini generation failed: {e}")
                     raise Exception(f"Gemini Error: {e}")
 
-        raise Exception(f"Gemini Quota Exhausted after {max_retries} retries. Error: {final_error}")
+        raise Exception(f"Gemini Retries Exhausted. Last Error: {final_error}")
 
     def _generate_ollama(self, prompt: str, system_prompt: Optional[str], max_retries: int) -> str:
         """Generate text using local Ollama."""

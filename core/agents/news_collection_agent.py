@@ -24,10 +24,12 @@ class NewsCollectionAgent(BaseAgent):
         """
         self.log_progress(f"Collecting headlines for topic: {state.topic}")
         
-        # 1. Fetch ALL entries from Google News (no content crawling yet)
+        # 1. Fetch ALL entries from Google News with DATE FILTER
+        # &when=2y ensures we get the latest news (last 2 years) but avoid ancient 2018 history.
+        # &ceid=US:en ensures English results.
         source = {
             'name': 'Google News',
-            'url': f"https://news.google.com/rss/search?q={state.topic.replace(' ', '+')}&hl=en-US&gl=US&ceid=US:en",
+            'url': f"https://news.google.com/rss/search?q={state.topic.replace(' ', '+')}+when:2y&hl=en-US&gl=US&ceid=US:en",
             'type': 'rss'
         }
         

@@ -3,6 +3,7 @@
 import argparse
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
 from loguru import logger
 from core.workflows.news_video_workflow import NewsVideoWorkflow
 import json
@@ -26,6 +27,9 @@ def setup_logging(level: str = "INFO"):
 
 def main():
     """Main CLI function."""
+    # Load environment variables first
+    load_dotenv()
+    
     parser = argparse.ArgumentParser(
         description="AI News Explainer Video Generator"
     )

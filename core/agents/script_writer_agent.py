@@ -36,7 +36,7 @@ class ScriptWriterAgent(BaseAgent):
         self.log_progress(f"Generated narration ({len(narration.split())} words)")
 
         # Log for UI display
-        self.log_progress(f"[RESULT] NARRATION: {narration}")
+        self.log_progress(f"\n{'='*40}\nGENERATED NARRATION:\n{narration}\n{'='*40}")
         
         return state
     
@@ -65,7 +65,7 @@ STRICT JOURNALISTIC RULES (5W+1H):
 3. **NEUTRAL TONE**: No "tragic/heartbreaking". Be serious but calm.
 4. **SHORT SENTENCES**: Write for the ear. Simple words. 
 5. **CHRONOLOGICAL**: What happened first -> What is happening now -> Official response.
-6. **NEUTRAL ENDING**: End with the current status or "investigation ongoing". Do not summarize feelings.
+6. **DEFINITIVE CONCLUSION**: End with a complete sentence about the future scope, next steps, or current hopes. Do not leave the narration hanging.
 
 FORMATTING:
 - Write ONLY the spoken words.

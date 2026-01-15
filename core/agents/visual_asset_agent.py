@@ -6,7 +6,9 @@ from typing import Dict, Any
 from pathlib import Path
 import requests
 import hashlib
+import os
 from .base_agent import BaseAgent, AgentState
+from ..utils.wan_client import WanClient # New Import
 
 
 class VisualAssetAgent(BaseAgent):
@@ -27,6 +29,25 @@ class VisualAssetAgent(BaseAgent):
             d = ImageDraw.Draw(img)
             d.text((10,10), "News Fallback", fill=(255,255,255))
             img.save(self.fallback_image)
+
+        # Initialize WanClient if enabled
+        self.wan_client = None
+        gen_config = self.config.get("video", {}).get("generation", {})
+        if gen_config.get("enable") and gen_config.get("provider") == "piapi":
+             api_key = gen_config.get("api_key")
+             # Resolve env var if needed
+             if api_key and api_key.startswith("${"):
+                 env_var = api_key[2:-1]
+                 api_key = os.getenv(env_var)
+             
+             if api_key:
+                 self.wan_client = WanClient(
+                     api_key=api_key, 
+                     model=gen_config.get("model", "wan-2.5")
+                 )
+                 self.log_progress(f"Wan 2.5 Video Generation Enabled (Model: {self.wan_client.model})")
+             else:
+                 self.log_progress("Wan 2.5 Enabled but API Key missing.", level="warning")
 
     def execute(self, state: AgentState) -> AgentState:
         if not self.validate_input(state, ["scene_plan"]):
@@ -75,7 +96,24 @@ class VisualAssetAgent(BaseAgent):
                     except Exception as e:
                         self.log_progress(f"Real image failed: {e}", level="warning")
                 
-                # STRATEGY 2: AI Generation (Primary)
+                # STRATEGY 2a: AI Video Generation (Wan 2.5)
+                # Attempt only if enabled and no real image found (or even if found? user preference. Let's prioritize video if scene warrants it)
+                # For now, if REAL_FOOTAGE found, we used it. If not, we try Video Gen.
+                if not image_path and self.wan_client:
+                    query = scene.get("visual", {}).get("image_query", "")
+                    if not query:
+                        query = f"News footage of {scene.get('location', 'event')}"
+                    
+                    try:
+                        self.log_progress(f"Scene {idx+1}: Generating Video with Wan 2.5...")
+                        video_path = self._fetch_wan_video(query, run_dir, idx)
+                        if video_path:
+                            image_path = video_path
+                            source = "generated_wan_video"
+                    except Exception as e:
+                        self.log_progress(f"Scene {idx+1}: Video generation failed: {e}", level="warning")
+
+                # STRATEGY 2b: AI Image Generation (Fallback)
                 if not image_path:
                     query = scene.get("visual", {}).get("image_query", "")
                     if not query or len(query) < 10:
@@ -332,6 +370,33 @@ class VisualAssetAgent(BaseAgent):
                 time.sleep(2 * (attempt + 1)) # Backoff: 2s, 4s
 
         raise RuntimeError("Pollinations generation failed after 3 attempts")
+
+    def _fetch_wan_video(self, query: str, run_dir: Path, idx: int) -> Path:
+        """Generate a video using WanClient."""
+        import hashlib
+        key = hashlib.md5(query.encode()).hexdigest()
+        video_path = run_dir / f"wan_gen_{key}.mp4"
+        
+        if video_path.exists():
+            return video_path
+            
+        # Use WanClient
+        # Optimize prompt for video
+        safe_query = query[:400] + ", cinematic, 4k, slow motion, detailed"
+        
+        video_url = self.wan_client.generate_video(safe_query)
+        
+        if video_url:
+            # Download video
+            response = requests.get(video_url, timeout=60)
+            if response.status_code == 200:
+                with open(video_path, "wb") as f:
+                    f.write(response.content)
+                return video_path
+            else:
+                self.log_progress(f"Failed to download generated video: {response.status_code}", level="warning")
+        
+        return None
 
     def _resolve_scene_image(self, scene: Dict[str, Any]) -> Path:
         # Legacy method kept for interface compatibility if needed, but logic moved to execute

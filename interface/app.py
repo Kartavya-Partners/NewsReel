@@ -143,9 +143,9 @@ if generate_btn and topic:
             
         def write(self, message):
             self.logs.append(message.strip())
-            # Keep last 5 logs
-            recent_logs = "\n".join(self.logs[-5:])
-            log_area.code(recent_logs, language="text")
+            # Show FULL logs
+            full_logs = "\n".join(self.logs)
+            log_area.code(full_logs, language="text")
             
             # Update Progress based on keywords (heuristic)
             if "NewsCollectionAgent" in message: progress_bar.progress(10)

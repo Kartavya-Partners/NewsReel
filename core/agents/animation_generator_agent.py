@@ -7,7 +7,7 @@ from typing import Dict, Any
 from pathlib import Path
 import os
 
-from moviepy import ImageClip, CompositeVideoClip, ColorClip, vfx
+from moviepy import ImageClip, CompositeVideoClip, ColorClip, VideoFileClip, vfx
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -55,22 +55,46 @@ class AnimationGeneratorAgent(VideoGeneratorAgent):
             # Fallback black clip
             return ColorClip(size=self.resolution, color=(0,0,0), duration=scene['duration'])
 
-        # Load and Resize Image (Cover)
-        img_clip = ImageClip(image_path).with_duration(scene['duration'])
-        
-        # Scale to fill (like CSS cover)
-        img_w, img_h = img_clip.size
-        screen_w, screen_h = self.resolution
-        
-        ratio = max(screen_w / img_w, screen_h / img_h)
-        # Add 15% buffer for Ken Burns movement
-        ratio *= 1.15  
-        img_clip = img_clip.resized(ratio)
+        # Check for Video (Wan 2.5)
+        if image_path and image_path.lower().endswith(".mp4"):
+            # Use VideoFileClip for generated video
+            bg_clip = VideoFileClip(image_path)
+            
+            # 1. Loop or Trim to match scene duration
+            if bg_clip.duration < scene['duration']:
+                # Loop video to fill duration
+                # Use vfx.Loop (available in moviepy v2 commonly as built-in or effect)
+                # Or just Loop manually if vfx.Loop is tricky. 
+                # Let's try explicit loop or just time-based resize
+                # Safe way: concatenate itself?
+                 bg_clip = bg_clip.with_effects([vfx.Loop(duration=scene['duration'])])
+            else:
+                 bg_clip = bg_clip.with_subclip(0, scene['duration'])
+                 
+            # 2. Resize to Cover
+            # Wan generates 16:9 usually, so fit to width/height
+            img_w, img_h = bg_clip.size
+            screen_w, screen_h = self.resolution
+            ratio = max(screen_w / img_w, screen_h / img_h)
+            bg_clip = bg_clip.resized(ratio).with_position("center")
+            
+        else:
+            # Load and Resize Image (Cover)
+            img_clip = ImageClip(image_path).with_duration(scene['duration'])
+            
+            # Scale to fill (like CSS cover)
+            img_w, img_h = img_clip.size
+            screen_w, screen_h = self.resolution
+            
+            ratio = max(screen_w / img_w, screen_h / img_h)
+            # Add 15% buffer for Ken Burns movement
+            ratio *= 1.15  
+            img_clip = img_clip.resized(ratio)
 
-        # 2. Apply Motion (Ken Burns Variants)
-        motion_type = scene.get("visual", {}).get("camera_motion", "zoom_in")
-        bg_clip = self._apply_motion(img_clip, motion_type, scene['duration'])
-        bg_clip = bg_clip.with_position("center")
+            # 2. Apply Motion (Ken Burns Variants)
+            motion_type = scene.get("visual", {}).get("camera_motion", "zoom_in")
+            bg_clip = self._apply_motion(img_clip, motion_type, scene['duration'])
+            bg_clip = bg_clip.with_position("center")
 
         # 3. Add Dark Overlay (Cinematic Depth)
         # 3. Add Dark Overlay (Cinematic Depth)

@@ -33,6 +33,7 @@ content:
   
 # Scene Planning
 scenes:
+  max_scenes: 5 # Limit total scenes
   min_scene_duration: 5  # seconds
   max_scene_duration: 6  # seconds
   transition_duration: 0.5  # seconds
@@ -59,6 +60,14 @@ tts:
 video:
   # ---- Feature flag ----
   generate_video: true  # Set to true to enable video generation
+
+  # ---- Video Generation Model (Wan 2.5) ----
+  generation:
+    enable: true
+    provider: "piapi" # piapi, pollinations
+    model: "wan-2.1-t2v-turbo"  # User requested WanX (Wan 2.1)
+    api_key: "${PIAPI_API_KEY}" # Loaded from env
+
 
   # ---- Output settings ----
   output_format: "mp4"

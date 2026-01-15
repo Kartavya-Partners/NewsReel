@@ -26,159 +26,103 @@ class VisualPlannerAgent(BaseAgent):
             # Attempt Batch Processing for Speed (17m -> 2m)
             enhanced_scenes = self._enhance_scenes_batch(state.scene_plan)
         except Exception as e:
-            self.log_progress(f"Batch processing failed: {e}. Reverting to sequential.", level="error")
-            # Fallback to sequential
+            self.log_progress(f"Batch processing failed: {e}. Reverting to rule-based fallback.", level="error")
+            # Fallback to pure rule-based (NO LLM) to save quota
             enhanced_scenes = []
             for scene in state.scene_plan:
-                try:
-                    enhanced_scenes.append(self._enhance_scene(scene))
-                except Exception as seq_e:
-                    enhanced_scenes.append(self._fallback_visual(scene))
+                enhanced_scenes.append(self._fallback_visual(scene))
 
         state.scene_plan = enhanced_scenes
         self.log_progress("Visual planning completed")
         return state
 
     def _enhance_scenes_batch(self, scenes: List[Dict]) -> List[Dict]:
-        """Process scenes in chunks to avoid LLM timeouts/Hallucinations."""
-        chunk_size = 4  # Process 4 scenes at a time (Safe for local LLM)
-        enhanced_all = []
+        """Process ALL scenes in ONE single LLM call to save quota."""
+        self.log_progress(f"Enhancing {len(scenes)} scenes in ONE batch...")
         
-        # Helper for chunking
-        for i in range(0, len(scenes), chunk_size):
-            chunk = scenes[i : i + chunk_size]
-            self.log_progress(f"Processing batch chunk {i//chunk_size + 1} (Scenes {i+1}-{min(i+chunk_size, len(scenes))})")
-            
-            try:
-                # Process this chunk
-                processed_chunk = self._process_chunk(chunk, start_id=i)
-                enhanced_all.extend(processed_chunk)
-            except Exception as e:
-                self.log_progress(f"Chunk failed: {e}. Using fallback for this chunk.", level="warning")
-                for s in chunk:
-                    enhanced_all.append(self._fallback_visual(s))
-                    
-        return enhanced_all
-
-    def _process_chunk(self, chunk_scenes: List[Dict], start_id: int) -> List[Dict]:
-        """Process a small specific list of scenes."""
+        # Prepare mini representation
         mini_scenes = []
-        for j, s in enumerate(chunk_scenes):
+        for s in scenes:
             mini_scenes.append({
-                "id": start_id + j,
-                "text": s.get("narration_text", "")[:200], # Limit text length
-                "visual_note": s.get("visual_description", "")
+                "id": s.get("scene_id"),
+                "text": s.get("narration_text", "")[:150], 
+                "visual_note": s.get("visual", {}).get("visual_focus", "")
             })
             
         prompt = f"""
         You are a visual director for news explainer videos.
         
-        INPUT SCRIPT CHUNK:
+        INPUT SCRIPT:
         {json.dumps(mini_scenes, indent=2)}
 
         TASK:
-        Generate a JSON list of logical visual plans for these {len(chunk_scenes)} scenes.
+        Generate a JSON list of logical visual plans for ALL these scenes.
 
         CRITICAL INSTRUCTIONS:
-        1. Classify scene type: 'RE_ENACTMENT', 'REAL_FOOTAGE', 'INFOGRAPHIC'.
+        1. Classify scene type: 'RE_ENACTMENT' (action), 'REAL_FOOTAGE' (places), 'INFOGRAPHIC' (concepts).
         2. Assign 'camera_motion': 'zoom_in', 'zoom_out', 'pan_left', 'pan_right'.
         3. 'lower_third_text': Short headline (MAX 6 WORDS). OMIT if no specific info.
         4. 'image_query': Detailed prompt. rules:
            - FORCE 'Location/Country' context (e.g., "New Delhi India").
            - NO TEXT/CHARTS: Do NOT ask for "charts", "graphs", or "signs".
            - STYLE: "Cinematic, Unreal Engine 5, Photorealistic, No Text".
+           - IMPORTANT: If the scene describes a specific event, use 'RE_ENACTMENT' and describe the action vividly.
 
         OUTPUT FORMAT (Strict JSON List):
         [
             {{
-                "id": {start_id}, 
+                "id": 1, 
                 "visual": {{ ... }}
             }}
         ]
         """
         
-        response = self.llm_client.generate(prompt)
-        
-        # Parse
         try:
-            start = response.find("[")
-            end = response.rfind("]") + 1
-            if start == -1 or end == 0: raise ValueError("No list found")
-            json_str = response[start:end]
-            plans = json.loads(json_str)
-        except json.JSONDecodeError:
-            import re
-            fixed = re.sub(r',\s*\]', ']', json_str)
-            plans = json.loads(fixed)
+            response = self.llm_client.generate(prompt)
             
-        # Merge
-        result_chunk = []
-        for x, scene in enumerate(chunk_scenes):
-            scene_id = start_id + x
-            plan = next((p for p in plans if p.get("id") == scene_id), None)
+            # Parse List
+            try:
+                start = response.find("[")
+                end = response.rfind("]") + 1
+                if start == -1 or end == 0: raise ValueError("No list found")
+                json_str = response[start:end]
+                plans = json.loads(json_str)
+            except (json.JSONDecodeError, ValueError):
+                import re
+                # Clean up and try again
+                json_str = re.sub(r'```json', '', response)
+                json_str = json_str.replace('```', '')
+                start = json_str.find("[")
+                end = json_str.rfind("]") + 1
+                if start != -1:
+                    plans = json.loads(json_str[start:end])
+                else:
+                    raise
             
-            if plan and "visual" in plan:
-                scene["visual"] = plan["visual"]
-            else:
-                scene["visual"] = self._fallback_visual(scene)["visual"]
-            result_chunk.append(scene)
-            
-        return result_chunk
+            # Merge Results
+            enhanced_scenes = []
+            for scene in scenes:
+                # Find matching plan by ID
+                plan = next((p for p in plans if p.get("id") == scene.get("scene_id")), None)
+                
+                if plan and "visual" in plan:
+                    # Update visual
+                    scene["visual"] = plan["visual"]
+                else:
+                    # Use Rule-Based Fallback (No Cost)
+                    scene["visual"] = self._fallback_visual(scene)["visual"]
+                
+                enhanced_scenes.append(scene)
+                
+            return enhanced_scenes
 
-    # ------------------------------------------------------------------
-    # Core LLM logic
-    # ------------------------------------------------------------------
-
-    def _enhance_scene(self, scene: Dict[str, Any]) -> Dict[str, Any]:
-        prompt = f"""
-        You are a visual director for news explainer videos.
-
-        Enhance the following scene with VISUAL instructions.
-        
-        INPUT SCENE:
-        {json.dumps(scene, indent=2)}
-
-        CRITICAL INSTRUCTIONS:
-        1. Classify scene type: 'REAL_FOOTAGE', 'RE_ENACTMENT', or 'INFOGRAPHIC'.
-        2. Construct a 'image_query' optimized for AI Image Generation (Unreal Engine 5 style).
-        3. Output ONLY valid JSON.
-        
-        GUIDANCE:
-        - FORCE 'Location/Country' context into every 'image_query'.
-        - NO TEXT/CHARTS: Do NOT ask for "charts", "graphs", "timelines", "signs", or "text". AI cannot write text.
-        - USE VISUAL METAPHORS: Instead of "Chart of rising prices", ask for "Pile of gold coins growing higher".
-        - Format: "EVENT: [Description], LOCATION: [City/Country], CONTEXT: [News Context], STYLE: [Style]"
-        
-        - If the scene describes an EVENT (explosion, arrest, raid) in [City]:
-            - Scene Type: 'RE_ENACTMENT'
-            - Motion: 'zoom_in'
-            - Query: "EVENT: Car explosion, LOCATION: Delhi Red Fort India, CONTEXT: Police investigation, STYLE: Hyper-realistic 3D render, unreal engine 5, dramatic lighting, breaking news, no text"
-        - If specific PLACE/PERSON is named:
-            - Scene Type: 'REAL_FOOTAGE'
-            - Motion: 'pan_right'
-            - Query: "EVENT: Public Protest, LOCATION: New Delhi India, CONTEXT: Anti-government demonstration, STYLE: Documentary photography, DSLR, 8k, candid"
-        - If abstract:
-            - Scene Type: 'INFOGRAPHIC'
-            - Query: "EVENT: Smog over city skyline, LOCATION: India, CONTEXT: Environmental crisis, STYLE: 3D Render, clean, cinematic lighting, no text"
-
-        OUTPUT FORMAT:
-        {{
-            "visual": {{
-                "scene_type": "RE_ENACTMENT",
-                "image_query": "EVENT: Car explosion, LOCATION: Red Fort Delhi India, CONTEXT: Terror attack investigation, STYLE: Hyper-realistic 3D render, unreal engine 5, news broadcast style",
-                "visual_style": "3d_render",
-                "camera_motion": "zoom_in", 
-                "lower_third_text": "Short headline. Extract specific Date/Location ONLY if present in source text.",
-                "overlay_elements": ["breaking_news_banner"]
-            }}
-        }}
-"""
-
-        response = self.llm_client.generate(prompt)
-        data = self.safe_json_load(response)
-
-        scene["visual"] = data["visual"]
-        return scene
+        except Exception as e:
+            self.log_progress(f"Batch visualization failed: {e}. Using rule-based fallback.", level="error")
+            # Fallback for ALL without calling LLM again
+            fallback_scenes = []
+            for s in scenes:
+                fallback_scenes.append(self._fallback_visual(s))
+            return fallback_scenes
 
     # ------------------------------------------------------------------
     # Safe JSON extraction
