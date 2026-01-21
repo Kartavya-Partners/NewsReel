@@ -15,18 +15,12 @@ AI NewsReel is a fully autonomous video generation pipeline that turns any news 
     *   **Smart Quota Handling:** Detects `429 Daily Limit` errors and stops gracefully.
     *   **Batch Processing:** Visual Planner uses a single API call for all scenes (80% quota reduction).
     *   **Token Optimization:** Increased limits to prevent narration truncation.
-*   **🎥 Wan 2.5 Video Generation:** Integrates **Wan 2.1 (Turbo)** via PiAPI to generate actual high-quality video clips, not just static images.
-*   **🗣️ Professional Voiceovers:** Integrated **Edge-TTS** for ultra-realistic neural voice narration.
-*   **📺 Streamlit Dashboard:** A user-friendly UI with **persistent full-history logging** to track agent progress live.
-
-## 🛠️ Tech Stack
-
 *   **Core:** Python 3.10+
 *   **LLM:** Google Gemini 2.5 Flash (`google-genai`)
-*   **Video Gen:** Wan 2.1 / WanX (via PiAPI)
+*   **Video Gen:** Wan 2.1 (Local Inference on GCP)
 *   **Frontend:** Streamlit
 *   **Video Engine:** MoviePy
-*   **Audio:** Edge-TTS
+*   **Audio:** Edge-TTS (Neural)
 *   **Config:** YAML & Pydantic for rigid type validation
 
 ## ⚙️ How It Works
