@@ -58,9 +58,18 @@ Create a `.env` file and add your Keys:
 # Gemini (Required for Agents)
 GOOGLE_API_KEY=your_gemini_key_here
 
-# PiAPI (Required for Wan 2.5 Video)
+# PiAPI (Optional - Only if not using Local Wan 2.1)
 PIAPI_API_KEY=your_piapi_key_here
 ```
+
+**GCP / Local Wan 2.1 Setup:**
+To run with local Wan 2.1 inference (recommended for GCP):
+1. Clone the `Wan-Video` repository next to this folder:
+   ```bash
+   git clone https://github.com/Wan-Video/Wan-Video.git ../Wan-Video
+   ```
+2. Download weights to `weights/Wan2.1-I2V-14B-720P`.
+3. The system will auto-detect and use the local model.
 
 **Run:**
 ```bash
