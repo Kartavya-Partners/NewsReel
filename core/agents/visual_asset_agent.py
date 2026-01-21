@@ -31,23 +31,40 @@ class VisualAssetAgent(BaseAgent):
             img.save(self.fallback_image)
 
         # Initialize WanClient if enabled
+        # Initialize WanClient if enabled
         self.wan_client = None
         gen_config = self.config.get("video", {}).get("generation", {})
-        if gen_config.get("enable") and gen_config.get("provider") == "piapi":
-             api_key = gen_config.get("api_key")
-             # Resolve env var if needed
-             if api_key and api_key.startswith("${"):
-                 env_var = api_key[2:-1]
-                 api_key = os.getenv(env_var)
+        
+        if gen_config.get("enable"):
+             provider = gen_config.get("provider", "piapi")
              
-             if api_key:
+             if provider == "local":
                  self.wan_client = WanClient(
-                     api_key=api_key, 
-                     model=gen_config.get("model", "wan-2.5")
+                     mode="local",
+                     model=gen_config.get("model", "wan-2.1-14b"),
+                     local_paths={
+                         "repo": gen_config.get("local_wan_path", "../Wan-Video"),
+                         "checkpoint": gen_config.get("local_checkpoint_path", "./weights/Wan2.1-I2V-14B-720P")
+                     }
                  )
-                 self.log_progress(f"Wan 2.5 Video Generation Enabled (Model: {self.wan_client.model})")
-             else:
-                 self.log_progress("Wan 2.5 Enabled but API Key missing.", level="warning")
+                 self.log_progress(f"Wan 2.1 Local Video Generation Enabled (Model: {self.wan_client.model})")
+             
+             elif provider == "piapi":
+                 api_key = gen_config.get("api_key")
+                 # Resolve env var if needed
+                 if api_key and api_key.startswith("${"):
+                     env_var = api_key[2:-1]
+                     api_key = os.getenv(env_var)
+                 
+                 if api_key:
+                     self.wan_client = WanClient(
+                         api_key=api_key, 
+                         model=gen_config.get("model", "wan-2.5"),
+                         mode="api"
+                     )
+                     self.log_progress(f"Wan 2.5 Video Generation Enabled (Model: {self.wan_client.model})")
+                 else:
+                     self.log_progress("Wan 2.5 Enabled but API Key missing.", level="warning")
 
     def execute(self, state: AgentState) -> AgentState:
         if not self.validate_input(state, ["scene_plan"]):

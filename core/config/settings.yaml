@@ -64,9 +64,10 @@ video:
   # ---- Video Generation Model (Wan 2.5) ----
   generation:
     enable: true
-    provider: "piapi" # piapi, pollinations
-    model: "wan-2.1-t2v-turbo"  # User requested WanX (Wan 2.1)
-    api_key: "${PIAPI_API_KEY}" # Loaded from env
+    provider: "local" # piapi, pollinations, local
+    model: "wan-2.1-14b"  # Wan 2.1 Model name
+    local_wan_path: "../Wan-Video" # Path to Wan-Video repo (sibling directory)
+    local_checkpoint_path: "./weights/Wan2.1-I2V-14B-720P" # Path to weights
 
 
   # ---- Output settings ----
