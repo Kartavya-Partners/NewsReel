@@ -157,7 +157,7 @@ class NewsCollectionAgent(BaseAgent):
             if len(text_content) < 200:
                 text_content = target_soup.get_text(" ", strip=True)
 
-            text_content = text_content[:3000]  # Increased limit slightly for context
+            text_content = text_content[:30000]  # Increased to 30k to capture full live blogs/speeches
             
         except Exception as e:
             self.log_progress(f"Error extracting content from {url}: {e}", level="warning")
