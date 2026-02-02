@@ -27,9 +27,9 @@ news:
 
 # Content Generation
 content:
-  summary_length: 150  # words
+  summary_length: 400  # Increased for detailed coverage
   narration_style: "neutral"  # neutral, casual, formal
-  target_duration: 90  # seconds
+  target_duration: 180  # Increased to 3 mins for depth
   
 # Scene Planning
 scenes:
