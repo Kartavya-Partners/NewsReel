@@ -12,7 +12,7 @@ class SummarizationAgent(BaseAgent):
         super().__init__(config)
         self.llm_client = LLMClient(config.get('llm', {}))
         self.content_config = config.get('content', {})
-        self.summary_length = self.content_config.get('summary_length', 150)
+        self.summary_length = self.content_config.get('summary_length', 250)
     
     def execute(self, state: AgentState) -> AgentState:
         """
