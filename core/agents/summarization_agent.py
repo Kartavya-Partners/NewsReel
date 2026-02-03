@@ -87,21 +87,21 @@ Topic: "{topic}"
 You are given VERIFIED Google News headlines ordered from OLDEST to LATEST.
 
 TASK:
-Write ONE concise news paragraph exactly like a professional news bulletin.
+Write a DETAILED NEWS REPORT covering this topic.
+Target Length: Approximately {self.summary_length} words.
 
 RULES:
-1. Follow strict chronological order (previous → latest).
-2. Treat early headlines as BACKGROUND and later ones as UPDATES.
-3. Mention dates, locations, authorities, and actions clearly.
-4. Do NOT invent facts.
-5. If headlines refer to different years or unrelated events, clearly state that no single recent incident exists.
+1. **COMPREHENSIVE**: Do not just summarize. Detail the events, background, and implications.
+2. **Review the facts**: Ensure that all numbers, dates, and names are accurate.
+3. **STRUCTURE**:
+   - **Headline**: A strong, engaging headline.
+   - **The Lead**: What happened? (Who, when, where).
+   - **The Detail**: Context, history (e.g. previous crashes), and eyewitness accounts.
+   - **The Outcome**: Investigation status and reactions.
+4. **TONE**: Professional, Investigative, Standard Journalism.
+5. **No Fluff**: Every sentence must contain information.
 
-STYLE:
-- Neutral
-- Factual
-- Newsroom tone (BBC / Reuters)
-- No storytelling, no opinions
-- CRITICAL: Ensure the summary ends with a complete sentence describing the current status, future implications, or what is expected next.
+CRITICAL: The report must be substative and matching the target length.
 
 HEADLINES:
 {text}
