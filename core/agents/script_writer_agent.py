@@ -59,19 +59,17 @@ class ScriptWriterAgent(BaseAgent):
         prompt = f"""Write a professional news explainer script based on this summary.
 Target length: {target_words} words.
 
-STRICT JOURNALISTIC RULES (5W+1H):
-1. **LEAD WITH THE NEWS**: Start immediately with the main event/update. Mention location ONLY if clearly stated in the summary.
-2. **FACT-BASED**: Use attribution ("According to police", "Reports suggest"). NEVER guess.
-3. **NEUTRAL TONE**: No "tragic/heartbreaking". Be serious but calm.
-4. **SHORT SENTENCES**: Write for the ear. Simple words. 
-5. **CHRONOLOGICAL**: What happened first -> What is happening now -> Official response.
-6. **DEFINITIVE CONCLUSION**: End with a complete sentence about the future scope, next steps, or current hopes. Do not leave the narration hanging.
+STRICT VISUAL NARRATIVE RULES:
+1. **BANNED PHRASES**: "Reports say", "Sources indicate", "It is reported".
+
+2. **VISUAL WRITING**: Write as if describing footage. Use active verbs.
+3. **CHRONOLOGICAL FLOW**: Start with the crash/incident. Then the aftermath. Then the investigation.
+4. **NO FILLER**: Every sentence must advance the action.
+5. **CONCLUSION**: End with a strong look-forward statement.
 
 FORMATTING:
 - Write ONLY the spoken words.
-- NO labels (Anchor:, Host:).
-- NO stage directions [brackets].
-- NO conversational fillers ("Here is the script").
+- NO labels, NO brackets.
 
 Topic: {topic}
 Summary: {summary}
