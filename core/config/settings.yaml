@@ -5,8 +5,8 @@ llm:
   provider: "gemini"
   model: "gemini-2.5-flash"  # Default model
   temperature: 0.3
-  max_tokens: 2000
-  timeout: 30
+  max_tokens: 8192
+  timeout: 120
   
   # Agent-Specific Models
   agents:
@@ -27,16 +27,16 @@ news:
 
 # Content Generation
 content:
-  summary_length: 400  # Increased for detailed coverage
+  summary_length: 650  # Detailed report as requested
   narration_style: "neutral"  # neutral, casual, formal
-  target_duration: 180  # Increased to 3 mins for depth
+  target_duration: 90  # Max 80 seconds narration
   
 # Scene Planning
 scenes:
   max_scenes: 5 # Limit total scenes
-  min_scene_duration: 5  # seconds
-  max_scene_duration: 6  # seconds
-  transition_duration: 0.5  # seconds
+  min_scene_duration: 8  # seconds
+  max_scene_duration: 10  # seconds
+  transition_duration: 0.3  # seconds
   
 # Animation Settings
 animation:
