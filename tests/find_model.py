@@ -43,7 +43,7 @@ def check_model(model_id):
     return False
 
 candidates = [
-    # Wan 2.1 (The new standard?)
+    # Wan 2.2 (The new standard?)
     "wan-2.1-t2v-1.3b",
     "wan-2.1-t2v-14b",
     "wan-2.1-img2vid",

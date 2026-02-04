@@ -55,7 +55,7 @@ class AnimationGeneratorAgent(VideoGeneratorAgent):
             # Fallback black clip
             return ColorClip(size=self.resolution, color=(0,0,0), duration=scene['duration'])
 
-        # Check for Video (Wan 2.5)
+        # Check for Video (Wan 2.2)
         if image_path and image_path.lower().endswith(".mp4"):
             # Use VideoFileClip for generated video
             bg_clip = VideoFileClip(image_path)

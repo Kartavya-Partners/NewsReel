@@ -9,7 +9,7 @@ mock_config = {
         "generation": {
             "enable": True,
             "provider": "piapi",
-            "model": "wan-2.5",
+            "model": "wan-2.2",
             "api_key": "test_key"
         }
     },

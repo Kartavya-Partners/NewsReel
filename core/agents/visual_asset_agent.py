@@ -44,10 +44,10 @@ class VisualAssetAgent(BaseAgent):
                      model=gen_config.get("model", "wan-2.1-14b"),
                      local_paths={
                          "repo": gen_config.get("local_wan_path", "../Wan-Video"),
-                         "checkpoint": gen_config.get("local_checkpoint_path", "./weights/Wan2.1-I2V-14B-720P")
+                         "checkpoint": gen_config.get("local_checkpoint_path", "./weights/Wan2.2-I2V-14B-720P-INT8")
                      }
                  )
-                 self.log_progress(f"Wan 2.1 Local Video Generation Enabled (Model: {self.wan_client.model})")
+                 self.log_progress(f"Wan 2.2 Local Video Generation Enabled (Model: {self.wan_client.model})")
              
              elif provider == "piapi":
                  api_key = gen_config.get("api_key")
@@ -59,12 +59,12 @@ class VisualAssetAgent(BaseAgent):
                  if api_key:
                      self.wan_client = WanClient(
                          api_key=api_key, 
-                         model=gen_config.get("model", "wan-2.5"),
+                         model=gen_config.get("model", "wan-2.2"),
                          mode="api"
                      )
-                     self.log_progress(f"Wan 2.5 Video Generation Enabled (Model: {self.wan_client.model})")
+                     self.log_progress(f"Wan 2.2 Video Generation Enabled (Model: {self.wan_client.model})")
                  else:
-                     self.log_progress("Wan 2.5 Enabled but API Key missing.", level="warning")
+                     self.log_progress("Wan 2.2 Enabled but API Key missing.", level="warning")
 
     def execute(self, state: AgentState) -> AgentState:
         if not self.validate_input(state, ["scene_plan"]):
@@ -113,7 +113,7 @@ class VisualAssetAgent(BaseAgent):
                     except Exception as e:
                         self.log_progress(f"Real image failed: {e}", level="warning")
                 
-                # STRATEGY 2a: AI Video Generation (Wan 2.5)
+                # STRATEGY 2a: AI Video Generation (Wan 2.2)
                 # Attempt only if enabled and no real image found (or even if found? user preference. Let's prioritize video if scene warrants it)
                 # For now, if REAL_FOOTAGE found, we used it. If not, we try Video Gen.
                 if not image_path and self.wan_client:
@@ -122,7 +122,7 @@ class VisualAssetAgent(BaseAgent):
                         query = f"News footage of {scene.get('location', 'event')}"
                     
                     try:
-                        self.log_progress(f"Scene {idx+1}: Generating Video with Wan 2.5...")
+                        self.log_progress(f"Scene {idx+1}: Generating Video with Wan 2.2...")
                         video_path = self._fetch_wan_video(query, run_dir, idx)
                         if video_path:
                             image_path = video_path
