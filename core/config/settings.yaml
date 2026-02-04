@@ -64,7 +64,7 @@ video:
   # ---- Video Generation Model (Wan 2.2) ----
   generation:
     enable: true
-    provider: "local" # piapi, pollinations, local
+    provider: "local" # piapi, local
     model: "wan-2.2"  # Wan 2.2 Model name
     local_wan_path: "../Wan-Video" # Path to Wan-Video repo (sibling directory)
     local_checkpoint_path: "./weights/Wan2.2-I2V-14B-720P-INT8" # Path to weights
