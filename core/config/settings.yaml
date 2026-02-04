@@ -61,13 +61,13 @@ video:
   # ---- Feature flag ----
   generate_video: true  # Set to true to enable video generation
 
-  # ---- Video Generation Model (Wan 2.5) ----
+  # ---- Video Generation Model (Wan 2.2) ----
   generation:
     enable: true
     provider: "local" # piapi, pollinations, local
-    model: "wan-2.1-14b"  # Wan 2.1 Model name
+    model: "wan-2.2"  # Wan 2.2 Model name
     local_wan_path: "../Wan-Video" # Path to Wan-Video repo (sibling directory)
-    local_checkpoint_path: "./weights/Wan2.1-I2V-14B-720P" # Path to weights
+    local_checkpoint_path: "./weights/Wan2.2-I2V-14B-720P-INT8" # Path to weights
 
 
   # ---- Output settings ----
