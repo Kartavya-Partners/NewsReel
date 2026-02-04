@@ -30,7 +30,7 @@ AI NewsReel is a fully autonomous video generation pipeline that turns any news 
     *   **NewsCollectionAgent:** Scrapes relevant articles using a 2-year recency filter.
     *   **SummarizationAgent:** Creates a factual summary (no 2018 noise).
     *   **ScriptWriterAgent:** Writes a 5-scene script with a definitive conclusion.
-    *   **VisualAssetAgent:** Generates videos using Wan 2.5 (or falls back to images).
+    *   **VisualAssetAgent:** Generates videos using Wan 2.2 (or falls back to images).
     *   **VideoComposerAgent:** Stitches everything into a final `.mp4`.
 3.  **Output:** A polished 1080p vertical video file.
 
@@ -52,17 +52,17 @@ Create a `.env` file and add your Keys:
 # Gemini (Required for Agents)
 GOOGLE_API_KEY=your_gemini_key_here
 
-# PiAPI (Optional - Only if not using Local Wan 2.1)
+# PiAPI (Optional - Only if not using Local Wan 2.2)
 PIAPI_API_KEY=your_piapi_key_here
 ```
 
-**GCP / Local Wan 2.1 Setup:**
-To run with local Wan 2.1 inference (recommended for GCP):
+**GCP / Local Wan 2.2 Setup:**
+To run with local Wan 2.2 inference (recommended for GCP):
 1. Clone the `Wan-Video` repository next to this folder:
    ```bash
    git clone https://github.com/Wan-Video/Wan-Video.git ../Wan-Video
    ```
-2. Download weights to `weights/Wan2.1-I2V-14B-720P`.
+2. Download weights to `weights/Wan2.2-I2V-14B-720P`.
 3. The system will auto-detect and use the local model.
 
 **Run:**
@@ -81,7 +81,7 @@ User Input → News Collection Agent (Recency Filter) →
 Summarization Agent (Journalistic Tone) → 
 Script Writer Agent (Complete Endings) → 
 Scene Planner Agent (Max 5 Scenes) → 
-Visual Asset Agent (Wan 2.5 Video) → 
+Visual Asset Agent (Wan 2.2 Video) → 
 Voiceover Agent → Video Composer Agent → 
 Final Video Output
 ```
