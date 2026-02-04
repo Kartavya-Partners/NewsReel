@@ -1,6 +1,6 @@
 # 🎬 AI NewsReel Generator
 
-**Automated "Text-to-Video" Agentic System using Google Gemini & Wan 2.5.**
+**Automated "Text-to-Video" Agentic System using Google Gemini & Wan 2.2.**
 
 AI NewsReel is a fully autonomous video generation pipeline that turns any news topic into a professional, 60-second news explainer video suitable for YouTube Shorts, Instagram Reels, or TikTok. It leverages a **Multi-Agent Architecture** to research, write, plan, and compose videos without human intervention.
 
@@ -17,7 +17,7 @@ AI NewsReel is a fully autonomous video generation pipeline that turns any news 
     *   **Token Optimization:** Increased limits to prevent narration truncation.
 *   **Core:** Python 3.10+
 *   **LLM:** Google Gemini 2.5 Flash (`google-genai`)
-*   **Video Gen:** Wan 2.1 (Local Inference on GCP)
+*   **Video Gen:** Wan 2.2 (Local Inference on GCP)
 *   **Frontend:** Streamlit
 *   **Video Engine:** MoviePy
 *   **Audio:** Edge-TTS (Neural)
@@ -62,7 +62,7 @@ To run with local Wan 2.2 inference (recommended for GCP):
    ```bash
    git clone https://github.com/Wan-Video/Wan-Video.git ../Wan-Video
    ```
-2. Download weights to `weights/Wan2.2-I2V-14B-720P`.
+2. Download weights to `weights/Wan2.2-I2V-14B-720P-INT8`.
 3. The system will auto-detect and use the local model.
 
 **Run:**
