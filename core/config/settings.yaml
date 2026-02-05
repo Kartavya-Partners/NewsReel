@@ -13,6 +13,13 @@ llm:
     summarization: "gemini-2.5-flash"
     script_writer: "gemini-2.5-flash"
 
+# GCP Configuration (Required for provider: "gcp")
+gcp:
+  project_id: "your-gcp-project-id"
+  zone: "us-central1-a"
+  instance_name: "wan-server-01"
+  bucket_name: "your-gcs-bucket-name"
+
 # News Sources
 news:
   sources:
@@ -64,7 +71,7 @@ video:
   # ---- Video Generation Model (Wan 2.2) ----
   generation:
     enable: true
-    provider: "local" # piapi, local
+    provider: "gcp" # options: local, gcp
     model: "wan-2.2"  # Wan 2.2 Model name
     local_wan_path: "../Wan-Video" # Path to Wan-Video repo (sibling directory)
     local_checkpoint_path: "./weights/Wan2.2-I2V-14B-720P-INT8" # Path to weights
