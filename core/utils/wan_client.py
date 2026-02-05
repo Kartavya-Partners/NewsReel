@@ -1,6 +1,5 @@
 import os
 import time
-import requests
 import json
 from typing import Optional, Dict, Any
 from loguru import logger
@@ -11,144 +10,27 @@ class WanClient:
     """
     
     
-    def __init__(self, api_key: str = None, base_url: str = "https://api.piapi.ai/api/v1", model: str = "wan-2.2", mode: str = "api", local_paths: Dict[str, str] = None, gcp_config: Dict[str, str] = None):
+    def __init__(self, model: str = "wan-2.2", mode: str = "local", local_paths: Dict[str, str] = None, gcp_config: Dict[str, str] = None):
         """
         Args:
-            api_key: API Key for PiAPI
-            base_url: Base URL for PiAPI
             model: Model name
-            mode: 'api', 'local', or 'gcp'
+            mode: 'local' (default) or 'gcp'
             local_paths: Dictionary with 'repo' and 'checkpoint' paths for local mode
             gcp_config: Dictionary with 'project_id', 'zone', 'instance_name', 'bucket_name' for GCP mode
         """
         self.mode = mode
         self.model = model
-        self.api_key = api_key
-        self.base_url = base_url.rstrip("/")
         self.gcp_config = gcp_config or {}
         
         self.local_pipeline = None
         if self.mode == "local":
             self._setup_local_model(local_paths)
 
-    def _setup_local_model(self, paths: Dict[str, str]):
-        """Sets up the local Wan 2.2 model."""
-        import sys
-        
-        if paths is None:
-            paths = {}
-        
-        repo_path = paths.get('repo', "../Wan-Video")
-        # Default to Wan 2.2 A14B INT8 Quantized as per architecture plan
-        # "Sweet Spot" Configuration
-        ckpt_path = paths.get('checkpoint', "./weights/Wan2.2-I2V-14B-720P-INT8")
-        
-        # Ensure defaults are stored back so they are available to _generate_via_local
-        paths['repo'] = repo_path
-        paths['checkpoint'] = ckpt_path
-        
-        # 1. Add Wan-Video to sys.path
-        abs_repo_path = os.path.abspath(repo_path)
-        if abs_repo_path not in sys.path:
-            logger.info(f"WanClient: Adding {abs_repo_path} to sys.path")
-            sys.path.append(abs_repo_path)
-            
-        try:
-            # Dynamic Import based on Wan repository structure
-            # Example: from wan.t2v import WanT2V
-            # Note: We need to know exact import structure. 
-            # Assuming 'wan.image2video' or similar based on typical repo.
-            # For now, we'll try a generic import and allow user to fix trace if repo differs.
-            
-            # Based on Wan 2.2 Github (MoE architecture):
-            # import wan
-            # from wan.configs import WAN_CONFIGS
-            
-            logger.info("WanClient: Importing local Wan module...")
-            import torch
-            from wan.configs import WAN_CONFIGS
-            from wan.utils.utils import cache_fake_news_token, str2bool
-            
-            # Determine config based on model name or default
-            # User specified Wan 2.2 A14B INT8 Quantized as the "sweet spot"
-            # Wan 2.2 is a distinct architecture (MoE)
-            cfg_name = 'Wan2.2-I2V-14B-720P' 
-            if 't2v' in self.model.lower():
-                 cfg_name = 'Wan2.2-T2V-14B'
-            
-            logger.info(f"WanClient: Loading Local Model: {cfg_name} from {ckpt_path}")
-            
-            # Placeholder for actual loading logic provided in Wan-Video/generate.py
-            # Since we don't have the repo, we will define a wrapper that mimics it.
-            # Real implementation would be:
-            # self.wan_model = WanModel.from_pretrained(ckpt_path)
-            # But let's assume we can call main generation function or class.
-            
-            # To be safe and simple: We will run the generation via SUBPROCESS call to the repo's script
-            # because importing complex research code often has side effects or conflicts.
-            # AND the user approved the "Batch" workflow which implies running scripts.
-            # BUT the user asked for "Machine Inference" inside code.
-            
-            # Let's stick to subprocess for stability unless user demanded python import.
-            # Python import allows better integration.
-            # Let's try to simulate the import.
-            
-            self.local_paths = paths
-            self.model_loaded = True
-            
-        except ImportError as e:
-            logger.error(f"WanClient: Failed to import Wan local module: {e}. Ensure 'Wan-Video' repo is cloned.")
-            self.model_loaded = False
-        except Exception as e:
-            logger.error(f"WanClient: Local setup error: {e}")
-            self.model_loaded = False
-        
     def generate_video(self, prompt: str, aspect_ratio: str = "16:9") -> Optional[str]:
-        if self.mode == "local":
-            return self._generate_via_local(prompt, aspect_ratio)
-        elif self.mode == "gcp":
+        if self.mode == "gcp":
             return self._generate_via_gcp(prompt, aspect_ratio)
         else:
-            return self._generate_via_api(prompt, aspect_ratio)
-
-    def _generate_via_api(self, prompt: str, aspect_ratio: str) -> Optional[str]:
-        """Original API implementation"""
-        url = f"{self.base_url}/task"
-        headers = {
-            "x-api-key": self.api_key,
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "model": self.model,
-            "task_type": "video_generation",
-            "input": {
-                "prompt": prompt,
-                "aspect_ratio": aspect_ratio
-            }
-        }
-        
-        try:
-            logger.info(f"WanClient: Sending generation request for model '{self.model}'...")
-            response = requests.post(url, headers=headers, json=payload, timeout=30)
-            
-            if response.status_code != 200:
-                logger.error(f"WanClient: API Error {response.status_code}: {response.text}")
-                return None
-                
-            data = response.json()
-            if data.get("code") != 200:
-                logger.error(f"WanClient: API Returned Error: {data.get('message')}")
-                return None
-                
-            task_id = data['data']['task_id']
-            logger.info(f"WanClient: Task started (ID: {task_id}). Polling for results...")
-            
-            return self._poll_task(task_id)
-            
-        except Exception as e:
-            logger.error(f"WanClient: Request Exception: {e}")
-            return None
+            return self._generate_via_local(prompt, aspect_ratio)
 
     def _generate_via_local(self, prompt: str, aspect_ratio: str) -> Optional[str]:
         """
@@ -364,40 +246,47 @@ class WanClient:
                 logger.critical(f"WanClient GCP: FAILED TO STOP VM! PLEASE STOP MANUALLY: {e}")
 
 
-    def _poll_task(self, task_id: str, max_retries: int = 60, interval: int = 5) -> Optional[str]:
-        """
-        Polls the task status until completion or timeout.
-        """
-        url = f"{self.base_url}/task/{task_id}"
-        headers = {"x-api-key": self.api_key}
+    def _setup_local_model(self, paths: Dict[str, str]):
+        """Sets up the local Wan 2.2 model."""
+        import sys
         
-        for attempt in range(max_retries):
-            try:
-                response = requests.get(url, headers=headers, timeout=10)
-                if response.status_code == 200:
-                    data = response.json()
-                    status = data.get('data', {}).get('status')
-                    
-                    if status == 'completed':
-                        output = data['data'].get('output', {})
-                        video_url = output.get('video_url') or output.get('url')
-                        if video_url:
-                            logger.info("WanClient: Generation Successful!")
-                            return video_url
-                        else:
-                            logger.error(f"WanClient: Completed but no URL found: {data}")
-                            return None
-                            
-                    elif status == 'failed':
-                        error = data['data'].get('error')
-                        logger.error(f"WanClient: Task Failed: {error}")
-                        return None
-                        
-                time.sleep(interval)
-                
-            except Exception as e:
-                logger.warning(f"WanClient: Polling error (attempt {attempt}): {e}")
-                time.sleep(interval)
-                
-        logger.error("WanClient: Polling Timed Out.")
-        return None
+        if paths is None:
+            paths = {}
+        
+        repo_path = paths.get('repo', "../Wan-Video")
+        # Default to Wan 2.2 A14B INT8 Quantized as per architecture plan
+        # "Sweet Spot" Configuration
+        ckpt_path = paths.get('checkpoint', "./weights/Wan2.2-I2V-14B-720P-INT8")
+        
+        # Ensure defaults are stored back so they are available to _generate_via_local
+        paths['repo'] = repo_path
+        paths['checkpoint'] = ckpt_path
+        
+        # 1. Add Wan-Video to sys.path
+        abs_repo_path = os.path.abspath(repo_path)
+        if abs_repo_path not in sys.path:
+            logger.info(f"WanClient: Adding {abs_repo_path} to sys.path")
+            sys.path.append(abs_repo_path)
+            
+        try:
+            # Dynamic Import based on Wan repository structure
+            logger.info("WanClient: Importing local Wan module...")
+            import torch
+            from wan.configs import WAN_CONFIGS
+            from wan.utils.utils import cache_fake_news_token, str2bool
+            
+            cfg_name = 'Wan2.2-I2V-14B-720P' 
+            if 't2v' in self.model.lower():
+                 cfg_name = 'Wan2.2-T2V-14B'
+            
+            logger.info(f"WanClient: Loading Local Model: {cfg_name} from {ckpt_path}")
+            
+            self.local_paths = paths
+            self.model_loaded = True
+            
+        except ImportError as e:
+            logger.error(f"WanClient: Failed to import Wan local module: {e}. Ensure 'Wan-Video' repo is cloned.")
+            self.model_loaded = False
+        except Exception as e:
+            logger.error(f"WanClient: Local setup error: {e}")
+            self.model_loaded = False
