@@ -8,9 +8,10 @@ mock_config = {
     "video": {
         "generation": {
             "enable": True,
-            "provider": "piapi",
+            "provider": "local",
             "model": "wan-2.2",
-            "api_key": "test_key"
+            "local_wan_path": "/mock/wan/repo",
+            "local_checkpoint_path": "/mock/wan/ckpt"
         }
     },
     "logging": {"level": "DEBUG"},
@@ -33,14 +34,14 @@ class TestVisualAssetAgentWan(unittest.TestCase):
     def test_initialization(self):
         agent = VisualAssetAgent(mock_config)
         self.assertIsNotNone(agent.wan_client)
-        self.assertEqual(agent.wan_client.api_key, "test_key")
+        self.assertEqual(agent.wan_client.mode, "local")
         print("Initialization Test Passed")
         
     @patch("core.agents.visual_asset_agent.WanClient") 
     def test_execution_calls_wan(self, MockWanClient):
         # Setup Mock
         mock_client_instance = MockWanClient.return_value
-        mock_client_instance.generate_video.return_value = "http://fake.url/video.mp4"
+        mock_client_instance.generate_video.return_value = "http://fake.url/video.mp4" # Even local returns a path/url
         
         # Inject mock instance into agent (bypassing init creation for control)
         agent = VisualAssetAgent(mock_config)
