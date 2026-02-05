@@ -1,6 +1,6 @@
 """
 Visual Asset Agent - Retrieves or generates visual assets for scenes.
-"""
+""" 
 
 from typing import Dict, Any
 from pathlib import Path
@@ -36,35 +36,17 @@ class VisualAssetAgent(BaseAgent):
         gen_config = self.config.get("video", {}).get("generation", {})
         
         if gen_config.get("enable"):
-             provider = gen_config.get("provider", "piapi")
-             
-             if provider == "local":
-                 self.wan_client = WanClient(
-                     mode="local",
-                     model=gen_config.get("model", "wan-2.1-14b"),
-                     local_paths={
-                         "repo": gen_config.get("local_wan_path", "../Wan-Video"),
-                         "checkpoint": gen_config.get("local_checkpoint_path", "./weights/Wan2.2-I2V-14B-720P-INT8")
-                     }
-                 )
-                 self.log_progress(f"Wan 2.2 Local Video Generation Enabled (Model: {self.wan_client.model})")
-             
-             elif provider == "piapi":
-                 api_key = gen_config.get("api_key")
-                 # Resolve env var if needed
-                 if api_key and api_key.startswith("${"):
-                     env_var = api_key[2:-1]
-                     api_key = os.getenv(env_var)
-                 
-                 if api_key:
-                     self.wan_client = WanClient(
-                         api_key=api_key, 
-                         model=gen_config.get("model", "wan-2.2"),
-                         mode="api"
-                     )
-                     self.log_progress(f"Wan 2.2 Video Generation Enabled (Model: {self.wan_client.model})")
-                 else:
-                     self.log_progress("Wan 2.2 Enabled but API Key missing.", level="warning")
+             # Strict Local/GCP Mode
+             self.wan_client = WanClient(
+                 mode=gen_config.get("provider", "local"), # local or gcp
+                 model=gen_config.get("model", "wan-2.2"),
+                 local_paths={
+                     "repo": gen_config.get("local_wan_path", "../Wan-Video"),
+                     "checkpoint": gen_config.get("local_checkpoint_path", "./weights/Wan2.2-I2V-14B-720P-INT8")
+                 },
+                 gcp_config=self.config.get("gcp", {}) # Pass GCP config if available
+             )
+             self.log_progress(f"Wan 2.2 Video Generation Enabled (Mode: {self.wan_client.mode})")
 
     def execute(self, state: AgentState) -> AgentState:
         if not self.validate_input(state, ["scene_plan"]):
@@ -297,17 +279,24 @@ class VisualAssetAgent(BaseAgent):
         # Optimize prompt for video
         safe_query = query[:400] + ", cinematic, 4k, slow motion, detailed"
         
-        video_url = self.wan_client.generate_video(safe_query)
+        result = self.wan_client.generate_video(safe_query)
         
-        if video_url:
-            # Download video
-            response = requests.get(video_url, timeout=60)
-            if response.status_code == 200:
-                with open(video_path, "wb") as f:
-                    f.write(response.content)
+        if result:
+            # Check if result is a local file path (GCP/Local mode) or URL (legacy)
+            if os.path.exists(result):
+                # It's a local file path - copy to our run directory
+                import shutil
+                shutil.copy(result, video_path)
                 return video_path
-            else:
-                self.log_progress(f"Failed to download generated video: {response.status_code}", level="warning")
+            elif result.startswith('http'):
+                # It's a URL - download it
+                response = requests.get(result, timeout=60)
+                if response.status_code == 200:
+                    with open(video_path, "wb") as f:
+                        f.write(response.content)
+                    return video_path
+                else:
+                    self.log_progress(f"Failed to download generated video: {response.status_code}", level="warning")
         
         return None
 
