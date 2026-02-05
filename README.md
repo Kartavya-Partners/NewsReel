@@ -51,9 +51,6 @@ Create a `.env` file and add your Keys:
 ```env
 # Gemini (Required for Agents)
 GOOGLE_API_KEY=your_gemini_key_here
-
-# PiAPI (Optional - Only if not using Local Wan 2.2)
-PIAPI_API_KEY=your_piapi_key_here
 ```
 
 **GCP / Local Wan 2.2 Setup:**
