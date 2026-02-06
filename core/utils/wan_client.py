@@ -10,16 +10,18 @@ class WanClient:
     """
     
     
-    def __init__(self, model: str = "wan-2.2", mode: str = "local", local_paths: Dict[str, str] = None, gcp_config: Dict[str, str] = None):
+    def __init__(self, model: str = "wan-2.2", mode: str = "local", local_paths: Dict[str, str] = None, gcp_config: Dict[str, str] = None, precision: str = "int8"):
         """
         Args:
-            model: Model name
+            model: Model name (e.g., 'wan-2.2' for INT8)
             mode: 'local' (default) or 'gcp'
             local_paths: Dictionary with 'repo' and 'checkpoint' paths for local mode
             gcp_config: Dictionary with 'project_id', 'zone', 'instance_name', 'bucket_name' for GCP mode
+            precision: 'int8' (L4) or 'fp16' (A100) - determines model variant
         """
         self.mode = mode
         self.model = model
+        self.precision = precision
         self.gcp_config = gcp_config or {}
         
         self.local_pipeline = None
@@ -59,7 +61,6 @@ class WanClient:
         # python generate.py --task t2v-14B --size 1280*720 --ckpt_dir <path> --prompt <prompt> --save_file <output>
         
         # Determine task argument based on model config
-        # Default to i2v-14B as per Wan 2.2 sweet spot
         task_arg = "i2v-14B" 
         if "t2v" in self.model.lower():
             task_arg = "t2v-14B"
@@ -76,6 +77,10 @@ class WanClient:
             "--prompt", prompt,
             "--save_file", full_output_path
         ]
+        
+        # Add precision flag if FP16
+        if self.precision == "fp16":
+            cmd.extend(["--precision", "fp16"])
         
         logger.info(f"WanClient: Running local inference: {' '.join(cmd)}")
         
@@ -182,6 +187,9 @@ class WanClient:
             task_arg = "t2v-14B"
             res_arg = "1280*720"
             
+            # Precision flag (FP16 if specified)
+            precision_arg = "--precision fp16" if self.precision == "fp16" else ""
+            
             # Using specific paths assumed in "Steps 8: Folder Structure"
             # /wan-project/generate.py
             # models in /wan-project/models
@@ -196,6 +204,7 @@ class WanClient:
                 f"python3 generate.py "
                 f"--task {task_arg} "
                 f"--size {res_arg} "
+                f"{precision_arg} "  # Add FP16 flag if needed
                 f"--prompt '{safe_prompt}' "
                 f"--save_file {remote_output_path}"
             )
@@ -254,9 +263,12 @@ class WanClient:
             paths = {}
         
         repo_path = paths.get('repo', "../Wan-Video")
-        # Default to Wan 2.2 A14B INT8 Quantized as per architecture plan
-        # "Sweet Spot" Configuration
-        ckpt_path = paths.get('checkpoint', "./weights/Wan2.2-I2V-14B-720P-INT8")
+        # Default to Wan 2.2 INT8 Quantized (L4 GPU - 24GB VRAM)
+        # L4 "Sweet Spot" Configuration - Cost-efficient
+        default_ckpt = "./weights/Wan2.2-I2V-14B-720P-INT8"
+        if self.precision == "fp16":
+            default_ckpt = "./weights/Wan2.2-I2V-14B-720P-FP16"
+        ckpt_path = paths.get('checkpoint', default_ckpt)
         
         # Ensure defaults are stored back so they are available to _generate_via_local
         paths['repo'] = repo_path
@@ -275,9 +287,14 @@ class WanClient:
             from wan.configs import WAN_CONFIGS
             from wan.utils.utils import cache_fake_news_token, str2bool
             
-            cfg_name = 'Wan2.2-I2V-14B-720P' 
+            # Config name based on precision
+            if self.precision == "fp16":
+                cfg_name = 'Wan2.2-I2V-14B-720P-FP16' 
+            else:
+                cfg_name = 'Wan2.2-I2V-14B-720P'  # INT8 default
+            
             if 't2v' in self.model.lower():
-                 cfg_name = 'Wan2.2-T2V-14B'
+                cfg_name = 'Wan2.2-T2V-14B-FP16' if self.precision == "fp16" else 'Wan2.2-T2V-14B'
             
             logger.info(f"WanClient: Loading Local Model: {cfg_name} from {ckpt_path}")
             
