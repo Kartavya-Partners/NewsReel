@@ -14,10 +14,11 @@ llm:
     script_writer: "gemini-2.5-flash"
 
 # GCP Configuration (Required for provider: "gcp")
+# L4 GPU Configuration (Cost-Efficient)
 gcp:
   project_id: "your-gcp-project-id"
   zone: "us-central1-a"
-  instance_name: "wan-server-01"
+  instance_name: "wan-video-l4-vm"  # L4 Spot Instance
   bucket_name: "your-gcs-bucket-name"
 
 # News Sources
@@ -69,12 +70,18 @@ video:
   generate_video: true  # Set to true to enable video generation
 
   # ---- Video Generation Model (Wan 2.2) ----
+  # L4 GPU with INT8 quantization for cost efficiency
   generation:
     enable: true
-    provider: "gcp" # options: local, gcp
-    model: "wan-2.2"  # Wan 2.2 Model name
+    provider: "local" # options: local, gcp
+    model: "wan-2.2"  # Wan 2.2 INT8 variant for L4
+    precision: "int8"  # INT8 quantization (L4 has 24GB VRAM)
     local_wan_path: "../Wan-Video" # Path to Wan-Video repo (sibling directory)
-    local_checkpoint_path: "./weights/Wan2.2-I2V-14B-720P-INT8" # Path to weights
+    local_checkpoint_path: "./weights/Wan2.2-I2V-14B-720P-INT8" # INT8 weights path
+    
+    # L4 Optimizations
+    num_inference_steps: 30  # Balanced for speed and quality
+    guidance_scale: 7.5
 
 
   # ---- Output settings ----
