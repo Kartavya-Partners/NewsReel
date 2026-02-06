@@ -2,7 +2,7 @@
 
 **Automated "Text-to-Video" Agentic System using Google Gemini & Wan 2.2.**
 
-AI NewsReel is a fully autonomous video generation pipeline that turns any news topic into a professional, 60-second news explainer video suitable for YouTube Shorts, Instagram Reels, or TikTok. It leverages a **Multi-Agent Architecture** to research, write, plan, and compose videos without human intervention.
+AI NewsReel is a fully autonomous video generation pipeline that turns any news topic into a professional, 60-second news explainer video suitable for YouTube Shorts, Instagram Reels, or TikTok. It leverages a **Multi-Agent Architecture** with **NVIDIA L4 GPU** for cost-efficient INT8 quantized video generation.
 
 ## 🚀 Key Features
 
@@ -17,7 +17,8 @@ AI NewsReel is a fully autonomous video generation pipeline that turns any news 
     *   **Token Optimization:** Increased limits to prevent narration truncation.
 *   **Core:** Python 3.10+
 *   **LLM:** Google Gemini 2.5 Flash (`google-genai`)
-*   **Video Gen:** Wan 2.2 (Local Inference on GCP)
+*   **Video Gen:** Wan 2.2 INT8 (GCP L4 GPU)
+*   **GPU:** NVIDIA L4 (24GB VRAM)
 *   **Frontend:** Streamlit
 *   **Video Engine:** MoviePy
 *   **Audio:** Edge-TTS (Neural)
@@ -53,14 +54,22 @@ Create a `.env` file and add your Keys:
 GOOGLE_API_KEY=your_gemini_key_here
 ```
 
-**GCP / Local Wan 2.2 Setup:**
-To run with local Wan 2.2 inference (recommended for GCP):
-1. Clone the `Wan-Video` repository next to this folder:
-   ```bash
-   git clone https://github.com/Wan-Video/Wan-Video.git ../Wan-Video
+**GCP L4 GPU Setup (Optional):**
+
+For cost-efficient cloud video generation, you can use **NVIDIA L4 GPU** on GCP with INT8 quantization.
+
+**Quick setup:**
+1. Create an L4 Spot instance on GCP
+2. Clone the Wan-Video repository
+3. Download INT8 model weights to `./weights/Wan2.2-I2V-14B-720P-INT8`
+4. Update `core/config/settings.yaml` with your GCP details:
+   ```yaml
+   gcp:
+     project_id: "your-project-id"
+     zone: "us-central1-a"
+     instance_name: "wan-video-l4-vm"
+     bucket_name: "your-bucket-name"
    ```
-2. Download weights to `weights/Wan2.2-I2V-14B-720P-INT8`.
-3. The system will auto-detect and use the local model.
 
 **Run:**
 ```bash
@@ -91,13 +100,19 @@ NewsReel/
 │   ├── agents/          # Individual agent implementations
 │   ├── workflows/       # LangGraph workflow definitions
 │   ├── utils/           # Helper functions (WanClient, LLMClient)
-│   └── config/          # Configuration files
+│   └── config/          # Configuration files (settings.yaml)
+├── docs/                # Documentation
+│   └── archive/         # Archived documentation
+├── scripts/             # Setup & Verification Scripts
+│   └── archive/         # Archived scripts
 ├── interface/           # Frontend (Streamlit)
-│   ├── app.py           # Streamlit UI Entry Point
-├── tests/               # Verification Scripts (probe_wan_api.py)
+│   └── app.py           # Streamlit UI Entry Point
+├── tests/               # Verification Scripts
 ├── output/              # Generated videos
 └── main.py              # CLI entry point
 ```
+
+
 
 ## 📄 License
 
