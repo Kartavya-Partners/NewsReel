@@ -31,22 +31,22 @@ class VisualAssetAgent(BaseAgent):
             img.save(self.fallback_image)
 
         # Initialize WanClient if enabled
-        # Initialize WanClient if enabled
         self.wan_client = None
         gen_config = self.config.get("video", {}).get("generation", {})
         
         if gen_config.get("enable"):
-             # Strict Local/GCP Mode
+             # Strict Local/GCP Mode with INT8 quantization (L4 GPU)
              self.wan_client = WanClient(
                  mode=gen_config.get("provider", "local"), # local or gcp
                  model=gen_config.get("model", "wan-2.2"),
+                 precision=gen_config.get("precision", "int8"),  # INT8 for L4
                  local_paths={
                      "repo": gen_config.get("local_wan_path", "../Wan-Video"),
                      "checkpoint": gen_config.get("local_checkpoint_path", "./weights/Wan2.2-I2V-14B-720P-INT8")
                  },
                  gcp_config=self.config.get("gcp", {}) # Pass GCP config if available
              )
-             self.log_progress(f"Wan 2.2 Video Generation Enabled (Mode: {self.wan_client.mode})")
+             self.log_progress(f"Wan 2.2 Video Generation Enabled (Mode: {self.wan_client.mode}, Precision: {gen_config.get('precision', 'int8')})")
 
     def execute(self, state: AgentState) -> AgentState:
         if not self.validate_input(state, ["scene_plan"]):
