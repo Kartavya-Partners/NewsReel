@@ -1,0 +1,219 @@
+#!/usr/bin/env python3
+"""
+A100 GPU Setup Verification Script
+Verifies that the video-gen-vm is properly configured for Wan 2.2 FP16 generation
+"""
+
+import sys
+import subprocess
+
+def print_header(text):
+    print(f"\n{'='*60}")
+    print(f"  {text}")
+    print(f"{'='*60}\n")
+
+def check_nvidia_driver():
+    """Check NVIDIA driver installation"""
+    print("🔍 Checking NVIDIA Driver...")
+    try:
+        result = subprocess.run(['nvidia-smi'], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            print("✅ NVIDIA Driver: OK")
+            # Extract driver version
+            for line in result.stdout.split('\n'):
+                if 'Driver Version' in line:
+                    print(f"   {line.strip()}")
+            return True
+        else:
+            print("❌ NVIDIA Driver: NOT FOUND")
+            return False
+    except Exception as e:
+        print(f"❌ NVIDIA Driver: ERROR - {e}")
+        return False
+
+def check_cuda():
+    """Check CUDA installation"""
+    print("\n🔍 Checking CUDA Toolkit...")
+    try:
+        result = subprocess.run(['nvcc', '--version'], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            print("✅ CUDA Toolkit: OK")
+            for line in result.stdout.split('\n'):
+                if 'release' in line.lower():
+                    print(f"   {line.strip()}")
+            return True
+        else:
+            print("❌ CUDA Toolkit: NOT FOUND")
+            return False
+    except Exception as e:
+        print(f"❌ CUDA Toolkit: ERROR - {e}")
+        return False
+
+def check_pytorch():
+    """Check PyTorch installation and GPU support"""
+    print("\n🔍 Checking PyTorch...")
+    try:
+        import torch
+        print(f"✅ PyTorch: OK (version {torch.__version__})")
+        
+        # Check CUDA availability
+        if torch.cuda.is_available():
+            print(f"✅ CUDA Available: Yes")
+            print(f"   GPU Count: {torch.cuda.device_count()}")
+            print(f"   Current GPU: {torch.cuda.get_device_name(0)}")
+            
+            # Check VRAM
+            props = torch.cuda.get_device_properties(0)
+            vram_gb = props.total_memory / 1024**3
+            print(f"   Total VRAM: {vram_gb:.1f} GB")
+            
+            # Verify A100
+            if 'A100' in torch.cuda.get_device_name(0):
+                print("✅ GPU Type: NVIDIA A100 (Correct)")
+                if vram_gb >= 38:  # A100 should have 40GB
+                    print(f"✅ VRAM Capacity: {vram_gb:.1f} GB (Sufficient for FP16)")
+                    return True
+                else:
+                    print(f"⚠️  VRAM Capacity: {vram_gb:.1f} GB (Lower than expected)")
+                    return False
+            else:
+                print(f"⚠️  GPU Type: {torch.cuda.get_device_name(0)} (Expected A100)")
+                return False
+        else:
+            print("❌ CUDA Available: No")
+            return False
+            
+    except ImportError:
+        print("❌ PyTorch: NOT INSTALLED")
+        return False
+    except Exception as e:
+        print(f"❌ PyTorch: ERROR - {e}")
+        return False
+
+def check_wan_dependencies():
+    """Check Wan 2.2 dependencies"""
+    print("\n🔍 Checking Wan 2.2 Dependencies...")
+    dependencies = ['diffusers', 'transformers', 'accelerate', 'safetensors']
+    all_ok = True
+    
+    for dep in dependencies:
+        try:
+            __import__(dep)
+            print(f"✅ {dep}: OK")
+        except ImportError:
+            print(f"❌ {dep}: NOT INSTALLED")
+            all_ok = False
+    
+    return all_ok
+
+def check_project_structure():
+    """Check project directory structure"""
+    print("\n🔍 Checking Project Structure...")
+    import os
+    
+    required_paths = [
+        '/wan-project',
+        '/wan-project/outputs',
+        '/wan-project/Wan-Video',
+        '/wan-project/generate.py'
+    ]
+    
+    all_ok = True
+    for path in required_paths:
+        if os.path.exists(path):
+            print(f"✅ {path}: EXISTS")
+        else:
+            print(f"❌ {path}: MISSING")
+            all_ok = False
+    
+    return all_ok
+
+def check_model_weights():
+    """Check if FP16 model weights are downloaded"""
+    print("\n🔍 Checking Model Weights...")
+    import os
+    
+    fp16_path = '/wan-project/models/Wan2.2-I2V-14B-720P-FP16'
+    
+    if os.path.exists(fp16_path):
+        print(f"✅ FP16 Weights: FOUND at {fp16_path}")
+        # Check size
+        total_size = 0
+        for root, dirs, files in os.walk(fp16_path):
+            total_size += sum(os.path.getsize(os.path.join(root, f)) for f in files)
+        size_gb = total_size / 1024**3
+        print(f"   Total Size: {size_gb:.1f} GB")
+        
+        if size_gb > 20:  # FP16 14B model should be ~25-30GB
+            print("✅ Weight Size: Looks correct")
+            return True
+        else:
+            print("⚠️  Weight Size: Smaller than expected (incomplete download?)")
+            return False
+    else:
+        print(f"❌ FP16 Weights: NOT FOUND")
+        print(f"   Expected location: {fp16_path}")
+        print("   Download weights before proceeding")
+        return False
+
+def check_gcloud():
+    """Check Google Cloud SDK"""
+    print("\n🔍 Checking Google Cloud SDK...")
+    try:
+        result = subprocess.run(['gcloud', '--version'], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            print("✅ gcloud SDK: OK")
+            version_line = result.stdout.split('\n')[0]
+            print(f"   {version_line}")
+            return True
+        else:
+            print("❌ gcloud SDK: NOT FOUND")
+            return False
+    except Exception as e:
+        print(f"❌ gcloud SDK: ERROR - {e}")
+        return False
+
+def main():
+    print_header("A100 VM Setup Verification")
+    
+    checks = {
+        "NVIDIA Driver": check_nvidia_driver(),
+        "CUDA Toolkit": check_cuda(),
+        "PyTorch GPU": check_pytorch(),
+        "Wan Dependencies": check_wan_dependencies(),
+        "Project Structure": check_project_structure(),
+        "Model Weights": check_model_weights(),
+        "Google Cloud SDK": check_gcloud()
+    }
+    
+    print_header("Verification Summary")
+    
+    passed = sum(checks.values())
+    total = len(checks)
+    
+    for check_name, result in checks.items():
+        status = "✅ PASS" if result else "❌ FAIL"
+        print(f"{status} - {check_name}")
+    
+    print(f"\n{'='*60}")
+    print(f"Result: {passed}/{total} checks passed")
+    print(f"{'='*60}\n")
+    
+    if passed == total:
+        print("🎉 All checks passed! VM is ready for video generation.")
+        print("\nYou can now test generation with:")
+        print("  cd /wan-project")
+        print("  source venv/bin/activate")
+        print("  python3 generate.py --task i2v-14B --size 1280*720 \\")
+        print("    --ckpt_dir /wan-project/models/Wan2.2-I2V-14B-720P-FP16 \\")
+        print("    --prompt 'A serene ocean sunset' \\")
+        print("    --save_file /wan-project/outputs/test.mp4 \\")
+        print("    --precision fp16")
+        return 0
+    else:
+        print("⚠️  Some checks failed. Please review the errors above.")
+        print("Refer to docs/a100_vm_setup.md for setup instructions.")
+        return 1
+
+if __name__ == '__main__':
+    sys.exit(main())
