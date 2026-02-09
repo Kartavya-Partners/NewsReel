@@ -179,7 +179,9 @@ class NewsVideoWorkflow:
             "summary": final_state.get("summary", ""),
             "narration": final_state.get("narration", ""),
             "scene_plan": final_state.get("scene_plan", []),
-            "metadata": final_state.get("metadata", {})
+            "metadata": final_state.get("metadata", {}),
+            "raw_articles": final_state.get("raw_articles", []),
+            "filtered_articles": final_state.get("filtered_articles", [])
         }
 
         if self.generate_video and "video_path" in final_state:
