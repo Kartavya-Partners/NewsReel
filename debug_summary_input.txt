@@ -1,36 +1,57 @@
 PROMPT INPUT (HEADLINES):
-[2026-01-28]
-- Ajit Pawar, 4 others die in plane crash during emergency landing in Maharashtra's Baramati - Times of India (Google News)
+[2026-01-27]
+- Ajit Pawar: Veteran Indian politician dies in plane crash - BBC (Google News)
 
 [2026-01-28]
-- Farewell, Ajit Pawar: Maharashtra Deputy Chief Minister Cremated With Full State Honours - NDTV (Google News)
+- Ajit Pawar: Grief and shock over politician's death in plane crash - BBC (Google News)
 
 [2026-01-28]
-- Ajit Pawar plane crash video: Watch the tragic videos from the crash site - The Economic Times (Google News)
+- Deputy chief minister of India's Maharashtra state among five dead in air charter crash - Reuters (Google News)
 
 [2026-01-28]
-- Maharashtra Deputy CM Ajit Pawar, four others killed after plane crash in Baramati - The Hindu (Google News)
+- Ajit Pawar, a Veteran Indian Politician, Among 5 Killed in Plane Crash - The New York Times (Google News)
 
 [2026-01-28]
-- Video Shows Ajit Pawar's Plane In Pieces, On Fire After Crash Landing - NDTV (Google News)
+- Senior state official among 5 dead after private plane crash in western India - AP News (Google News)
+
+[2026-01-28]
+- India: Deputy state leader among 5 killed in plane crash - dw.com (Google News)
+
+[2026-01-28]
+- Who was Ajit Pawar, the Indian politician killed in plane crash? - Al Jazeera (Google News)
+
+[2026-01-28]
+- High-ranking Indian politician dies in plane crash - cnn.com (Google News)
 
 [2026-01-28]
 - Ajit Pawar's Plane Was Attempting 2nd Approach To Airport When It Crashed - NDTV (Google News)
 
 [2026-01-28]
-- Ajit Pawar plane crash highlights | Ajit Pawar dies in a plane crash; funeral in Baramati - The Hindu (Google News)
+- Ajit Pawar dies in plane crash: VSR Aviation’s Learjet had met with landing mishap in 2023 too - Times of India (Google News)
 
 [2026-01-28]
-- Ajit Pawar's final words before death in plane crash: Maharashtra Deputy CM's last post on X was just an h - The Economic Times (Google News)
+- Ajit Pawar plane crash: Another Learjet 45 of VSR Aviation had crash landed at Mumbai airport in 2023 - The Indian Express (Google News)
 
 [2026-01-28]
-- Plane That Ajit Pawar Died In Had Crashed In 2023 As Well - NDTV (Google News)
+- Plane crash kills prominent Indian politician Ajit Pawar - Al Jazeera (Google News)
 
 [2026-01-28]
-- Ajit Pawar's last flight ends in horrific tragedy, plane gutted by fire moments after 2nd landing attempt | Watch - Mint (Google News)
+- Video Shows Ajit Pawar's Plane In Pieces, On Fire After Crash Landing - NDTV (Google News)
 
 [2026-01-28]
-- Ajit Pawar’s last flight: Plane crash that shook the nation - Times of India (Google News)
+- Ajit Pawar's plane split into pieces: Fire, smoke, debris and scattered papers - video shows aftermath of - Times of India (Google News)
+
+[2026-01-28]
+- What we know about plane crash that killed Ajit Pawar - Al Jazeera (Google News)
+
+[2026-01-28]
+- "Papa, I'm Flying With Ajit Pawar To Baramati": Crew Member's Last Call To Father - NDTV (Google News)
+
+[2026-01-28]
+- CCTV Footage Shows Moment Ajit Pawar's Plane Crashed, Burst Into Flames - NDTV (Google News)
+
+[2026-01-28]
+- Ajit Pawar Dies In Plane Crash: What We Know About The Aircraft - NDTV (Google News)
 
 [2026-01-28]
 - Ajit Pawar dies in plane crash: What we know about the Learjet 45 aircraft, charter company VSR Aviation - Mint (Google News)
@@ -39,52 +60,31 @@ PROMPT INPUT (HEADLINES):
 - Ajit Pawar plane crash: From CDS Bipin Rawat, Netaji Bose to Sanjay Gandhi, list of famous personalities w - The Economic Times (Google News)
 
 [2026-01-28]
-- Ajit Pawar Death: Eyewitness Describes Moment Plane Crashed - NDTV (Google News)
+- Bombardier Learjet 45: The aircraft that crashed with Ajit Pawar on board - thehindu.com (Google News)
 
 [2026-01-28]
-- 'Shocked And Saddened By Ajit Pawar's Death': PM Modi Posts Tribute - NDTV (Google News)
+- Ajit Pawar's plane crashed due to bad weather, sabotage or a technical error? Here's what we know so far - The Economic Times (Google News)
 
 [2026-01-28]
-- Jet involved in Ajit Pawar plane crash has history of accidents - The Economic Times (Google News)
+- Maharashtra Deputy CM Ajit Pawar, five others killed in Pune plane crash — What we know so far - Mint (Google News)
 
 [2026-01-28]
-- Plane that Ajit Pawar died in had crashed before - Gulf News (Google News)
+- Obituary: Ajit Pawar, the mercurial leader who stepped out of his uncle's shadow - BBC (Google News)
 
 [2026-01-28]
-- 'Exploded multiple times after crash, fire was too big': Eyewitness on Ajit Pawar plane tragedy - The Economic Times (Google News)
+- Pilot Shambhavi Pathak Among 5 Dead In Plane Crash That Killed Ajit Pawar - NDTV (Google News)
 
 [2026-01-28]
-- Maharashtra's Ajit Pawar dies in plane crash: How it happened and what unfolded after the fatal impact - WION (Google News)
-
-[2026-01-28]
-- Videos and images of plane crash that killed Ajit Pawar surface on X | India News - Hindustan Times (Google News)
-
-[2026-01-28]
-- Ajit Pawar dies in plane crash: VSR Aviation’s Learjet had met with landing mishap in 2023 too - Times of India (Google News)
-
-[2026-01-28]
-- Ajit Pawars plane crash: What may have caused the tragedy in Maharashtra’s Baramati - Tribune India (Google News)
-
-[2026-01-28]
-- Ajit Pawar passes away: ‘The plane crashed, then exploded’ — eyewitness recalls horror, failed rescue attempts - Mint (Google News)
-
-[2026-01-28]
-- Air crash which killed Ajit Pawar to be probed, says Maharashtra Deputy CM Eknath Shinde - The Hindu (Google News)
-
-[2026-01-28]
-- Ajit Pawar's plane split into pieces: Fire, smoke, debris and scattered papers - video shows aftermath of - Times of India (Google News)
-
-[2026-01-28]
-- 2nd landing attempt, silence 4 minutes later: Final moments of Ajit Pawar jet crash - India Today (Google News)
-
-[2026-01-28]
-- Bombardier Learjet 45: The aircraft that crashed with Ajit Pawar on board - The Hindu (Google News)
+- Farewell, Ajit Pawar: Maharashtra Deputy Chief Minister Cremated With Full State Honours - NDTV (Google News)
 
 [2026-01-28]
 - Ajit Pawar's plane was attempting a second landing before it crashed | India News - Hindustan Times (Google News)
 
 [2026-01-28]
-- Ajit Pawar Dies In Plane Crash: Here's Why He Was Flying To Baramati - NDTV (Google News)
+- From Homi Bhabha to Ajit Pawar: Notable figures who died in air accidents - thehindu.com (Google News)
 
 [2026-01-28]
-- Massive explosion, no one could help: Eyewitness recalls horror of Ajit Pawar plane crash - India Today (Google News)
+- Plane That Ajit Pawar Died In Had Crashed In 2023 As Well - NDTV (Google News)
+
+[2026-01-28]
+- The VSR connection: Ajit Pawar plane crash revives chilling 2023 Learjet disaster linked to same operator - WION (Google News)
