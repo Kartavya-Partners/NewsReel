@@ -107,6 +107,13 @@ def main():
         
         logger.success(f"Results saved to: {output_path}")
         
+        # Save raw articles separately for evaluation and traceability
+        if 'raw_articles' in result and result['raw_articles']:
+            raw_articles_path = output_path.parent / "raw_articles.json"
+            with open(raw_articles_path, 'w', encoding='utf-8') as f:
+                json.dump(result['raw_articles'], f, indent=2, ensure_ascii=False)
+            logger.success(f"Raw articles saved to: {raw_articles_path} ({len(result['raw_articles'])} articles)")
+        
         # Print summary
         print("\n" + "=" * 60)
         print("WORKFLOW COMPLETED SUCCESSFULLY")
