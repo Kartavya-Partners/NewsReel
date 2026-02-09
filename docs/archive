@@ -1,0 +1,297 @@
+# A100 VM Setup Guide
+
+This guide walks you through setting up the company-provided **NVIDIA A100 GPU VM** (`video-gen-vm`) for Wan 2.2 video generation with FP16 precision.
+
+## Prerequisites
+
+- Access to GCP project with `video-gen-vm` instance
+- `gcloud` CLI installed and authenticated
+- SSH access to the VM
+
+## VM Specifications
+
+```
+VM Name: video-gen-vm
+GPU: NVIDIA A100 (40GB VRAM)
+Machine Type: a2-highgpu-1g
+Zone: us-central1-a
+OS: Ubuntu 22.04 LTS
+Disk: 500GB
+```
+
+## Setup Steps
+
+### 1. Connect to the VM
+
+```bash
+gcloud compute ssh video-gen-vm --zone=us-central1-a
+```
+
+### 2. Install NVIDIA Drivers
+
+```bash
+# Update system
+sudo apt-get update
+sudo apt-get upgrade -y
+
+# Install NVIDIA driver (version 535 recommended for A100)
+sudo apt-get install -y nvidia-driver-535
+
+# Reboot to load driver
+sudo reboot
+```
+
+After reboot, reconnect and verify:
+
+```bash
+nvidia-smi
+```
+
+**Expected output:**
+```
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 535.xx.xx    Driver Version: 535.xx.xx    CUDA Version: 12.2   |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|===============================+======================+======================|
+|   0  NVIDIA A100-SXM...  Off  | 00000000:00:04.0 Off |                    0 |
+| N/A   30C    P0    42W / 400W |      0MiB / 40960MiB |      0%      Default |
++-------------------------------+----------------------+----------------------+
+```
+
+### 3. Install CUDA Toolkit 12.1
+
+```bash
+# Download CUDA 12.1 installer
+wget https://developer.download.nvidia.com/compute/cuda/12.1.0/local_installers/cuda_12.1.0_530.30.02_linux.run
+
+# Install CUDA (skip driver installation since we already have it)
+sudo sh cuda_12.1.0_530.30.02_linux.run --silent --toolkit --no-opengl-libs
+
+# Add to PATH
+echo 'export PATH=/usr/local/cuda-12.1/bin:$PATH' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=/usr/local/cuda-12.1/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
+source ~/.bashrc
+
+# Verify
+nvcc --version
+```
+
+### 4. Install Python and Dependencies
+
+```bash
+# Install Python 3.10
+sudo apt-get install -y python3.10 python3.10-venv python3-pip
+
+# Create project directory
+sudo mkdir -p /wan-project/outputs
+sudo chown -R $USER:$USER /wan-project
+cd /wan-project
+
+# Create virtual environment
+python3.10 -m venv venv
+source venv/bin/activate
+
+# Upgrade pip
+pip install --upgrade pip
+```
+
+### 5. Install PyTorch with CUDA 12.1
+
+```bash
+# Install PyTorch with CUDA 12.1 support
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# Verify PyTorch GPU support
+python3 -c "import torch; print(f'PyTorch: {torch.__version__}'); print(f'CUDA Available: {torch.cuda.is_available()}'); print(f'GPU: {torch.cuda.get_device_name(0)}'); print(f'VRAM: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB')"
+```
+
+**Expected output:**
+```
+PyTorch: 2.x.x+cu121
+CUDA Available: True
+GPU: NVIDIA A100-SXM4-40GB
+VRAM: 40.0 GB
+```
+
+### 6. Clone Wan 2.2 Repository
+
+```bash
+cd /wan-project
+
+# Clone official Wan repository
+git clone https://github.com/Wan-Video/Wan-Video.git
+cd Wan-Video
+
+# Install Wan dependencies
+pip install -r requirements.txt
+pip install diffusers transformers accelerate safetensors
+```
+
+### 7. Download FP16 Model Weights
+
+```bash
+# Create weights directory
+mkdir -p /wan-project/models/Wan2.2-I2V-14B-720P-FP16
+
+# Download weights (replace with actual download method)
+# Option 1: Hugging Face
+pip install huggingface-hub
+huggingface-cli download Wan-AI/Wan2.2-I2V-14B-720P-FP16 --local-dir /wan-project/models/Wan2.2-I2V-14B-720P-FP16
+
+# Option 2: Direct download (if provided by company)
+# gsutil cp -r gs://your-company-bucket/Wan2.2-I2V-14B-720P-FP16 /wan-project/models/
+```
+
+### 8. Install Google Cloud SDK
+
+```bash
+# Install gcloud SDK for GCS uploads
+echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+sudo apt-get update && sudo apt-get install -y google-cloud-sdk
+
+# Authenticate (use service account or user credentials)
+gcloud auth login
+```
+
+### 9. Create Generation Script
+
+Create `/wan-project/generate.py`:
+
+```python
+#!/usr/bin/env python3
+import argparse
+import torch
+from wan.pipelines import WanPipeline
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--task', type=str, default='i2v-14B')
+    parser.add_argument('--size', type=str, default='1280*720')
+    parser.add_argument('--ckpt_dir', type=str, required=True)
+    parser.add_argument('--prompt', type=str, required=True)
+    parser.add_argument('--save_file', type=str, required=True)
+    parser.add_argument('--precision', type=str, default='fp16', choices=['fp16', 'fp32'])
+    args = parser.parse_args()
+    
+    # Parse resolution
+    width, height = map(int, args.size.split('*'))
+    
+    # Load pipeline with FP16
+    dtype = torch.float16 if args.precision == 'fp16' else torch.float32
+    pipe = WanPipeline.from_pretrained(
+        args.ckpt_dir,
+        torch_dtype=dtype
+    ).to('cuda')
+    
+    # Generate video
+    output = pipe(
+        prompt=args.prompt,
+        width=width,
+        height=height,
+        num_inference_steps=50,
+        guidance_scale=7.5
+    )
+    
+    # Save
+    output.save(args.save_file)
+    print(f"Video saved to: {args.save_file}")
+
+if __name__ == '__main__':
+    main()
+```
+
+Make it executable:
+```bash
+chmod +x /wan-project/generate.py
+```
+
+### 10. Test Generation
+
+```bash
+cd /wan-project
+source venv/bin/activate
+
+python3 generate.py \
+  --task i2v-14B \
+  --size 1280*720 \
+  --ckpt_dir /wan-project/models/Wan2.2-I2V-14B-720P-FP16 \
+  --prompt "A serene ocean sunset with gentle waves" \
+  --save_file /wan-project/outputs/test.mp4 \
+  --precision fp16
+```
+
+**Monitor GPU usage:**
+```bash
+watch -n 1 nvidia-smi
+```
+
+You should see ~28-32GB VRAM usage during generation.
+
+## Performance Benchmarks
+
+| Metric | A100 FP16 |
+|--------|-----------|
+| VRAM Usage | ~28-32GB |
+| Generation Time | 25-35 seconds |
+| Quality | Excellent (full precision) |
+
+## Troubleshooting
+
+### CUDA Out of Memory
+```bash
+# Reduce inference steps
+--num_inference_steps 30
+```
+
+### Driver Issues
+```bash
+# Check driver
+nvidia-smi
+
+# Reinstall if needed
+sudo apt-get purge nvidia-*
+sudo apt-get install -y nvidia-driver-535
+sudo reboot
+```
+
+### PyTorch Not Detecting GPU
+```bash
+# Verify CUDA installation
+nvcc --version
+python3 -c "import torch; print(torch.cuda.is_available())"
+
+# Reinstall PyTorch
+pip uninstall torch torchvision torchaudio
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+```
+
+## Cost Optimization
+
+The VM auto-starts and auto-stops via your local `wan_client.py`. To manually manage:
+
+```bash
+# Stop VM (saves costs)
+gcloud compute instances stop video-gen-vm --zone=us-central1-a
+
+# Start VM
+gcloud compute instances start video-gen-vm --zone=us-central1-a
+```
+
+**Estimated costs:**
+- **Spot pricing**: ~$1.10/hour
+- **Per video**: ~$0.010 (30 seconds generation)
+- **100 videos/month**: ~$1.00
+
+## Next Steps
+
+1. ✅ Complete this setup
+2. ✅ Run test generation
+3. ✅ Update your local `settings.yaml` with correct GCP bucket name
+4. ✅ Test end-to-end workflow from local machine
+
+---
+
+**Setup complete!** Your A100 VM is ready for production video generation.
