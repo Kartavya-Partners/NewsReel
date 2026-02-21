@@ -40,8 +40,10 @@ class SummarizationAgent(BaseAgent):
         
         # Log for UI display
         self.log_progress(f"\n{'='*40}\nGENERATED SUMMARY:\n{summary}\n{'='*40}")
-        
+
         return state
+
+
     
     def _combine_articles(self, articles: list) -> str:
         """
@@ -71,15 +73,33 @@ class SummarizationAgent(BaseAgent):
             line = f"[{date_str}]\n- {article['title']} ({article.get('source', 'Unknown')})"
             formatted_lines.append(line)
 
-        # Build a date-distribution note for the LLM
+        # Separate into Deep Dives and Headline Context
+        deep_dives = [a for a in articles if a.get('is_deep')]
+        headlines = [a for a in articles if not a.get('is_deep')]
+        
+        sections = []
+        
+        # Section 1: Distribution Analysis
         total = len(articles)
-        distribution_note = "DATE DISTRIBUTION ACROSS SOURCES:\n" + "\n".join(
-            f"  {date}: {count} article(s) ({round(count/total*100)}%)"
-            for date, count in date_tally.most_common()
-        )
+        dist_lines = [f"  {date}: {count} article(s) ({round(count/total*100)}%)" for date, count in date_tally.most_common()]
+        sections.append("DATE DISTRIBUTION ACROSS SOURCES:\n" + "\n".join(dist_lines))
+        
+        # Section 2: Deep Dive Articles (Meat of the report)
+        if deep_dives:
+            sections.append("--- DEEP DIVE ARTICLES (Priority Content) ---")
+            for a in deep_dives:
+                date_str = a['published_dt'].strftime("%Y-%m-%d") if a.get('published_dt') else "Unknown"
+                sections.append(f"SOURCE: {a.get('source', 'Unknown')} | DATE: {date_str}\nTITLE: {a['title']}\nCONTENT:\n{a['content']}")
+        
+        # Section 3: Supporting Headlines (Context & Timeline)
+        if headlines:
+            sections.append("--- SUPPORTING HEADLINES (Timeline Context) ---")
+            for a in headlines:
+                date_str = a['published_dt'].strftime("%Y-%m-%d") if a.get('published_dt') else "Unknown"
+                sections.append(f"[{date_str}] - {a['title']} ({a.get('source', 'Unknown')})")
+        
+        return "\n\n".join(sections)
 
-        headlines_block = "\n\n".join(formatted_lines)
-        return f"{distribution_note}\n\nHEADLINES:\n{headlines_block}"
     
     def _generate_summary(self, text: str, topic: str) -> str:
         """
@@ -113,10 +133,12 @@ RULES:
 4. **TONE**: Professional, Investigative, Standard Journalism.
 5. **No Fluff**: Every sentence must contain information.
 6. **DATE ACCURACY — CRITICAL**:
-   - RSS feed timestamps can be wrong by ±1 day due to timezone differences (e.g. an event at 11 PM IST appears as the previous day in UTC).
-   - Use the DATE DISTRIBUTION provided above to identify the CANONICAL EVENT DATE — the date cited by the clear majority of sources.
-   - If a small number of headlines carry a date that is 1 day earlier than the majority, treat those as timezone artifacts; DO NOT use that earlier date as the event date in your report.
-   - Always state the event date using the majority-agreed date. Never derive the event date solely from the earliest or first article.
+   - RSS timestamps can be wrong by ±1 day. Use the DATE DISTRIBUTION provided to identify the majority-agreed date. Standardize all dates in the report to this majority date.
+7. **SELECTIVE DEPTH — IMPORTANT**:
+   - Prioritize information from the "--- DEEP DIVE ARTICLES ---" section. This contains full-text investigative content.
+   - Use the "--- SUPPORTING HEADLINES ---" section only to fill timeline gaps or provide broad context across the topic.
+- **DEPTH OVER BREVITY**: Be substantive. Use the full article content to explain *why* and *how*, not just *what*.
+
 
 CRITICAL: The report must be substantive and match the target length.
 
