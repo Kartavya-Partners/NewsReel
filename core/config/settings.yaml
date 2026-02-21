@@ -35,9 +35,10 @@ news:
 
 # Content Generation
 content:
-  summary_length: 650  # Detailed report as requested
-  narration_style: "neutral"  # neutral, casual, formal
-  target_duration: 90  # Max 80 seconds narration
+  summary_length: 800  # Increased for more depth as per user request
+  narration_style: "neutral"
+  target_duration: 120  # Increased duration for longer scripts
+
   
 # Scene Planning
 scenes:
@@ -72,7 +73,7 @@ video:
   # ---- Video Generation Model (Wan 2.2) ----
   # L4 GPU with INT8 quantization for cost efficiency
   generation:
-    enable: true
+    enable: false
     provider: "local" # options: local, gcp
     model: "wan-2.2"  # Wan 2.2 INT8 variant for L4
     precision: "int8"  # INT8 quantization (L4 has 24GB VRAM)
@@ -82,6 +83,7 @@ video:
     # L4 Optimizations
     num_inference_steps: 30  # Balanced for speed and quality
     guidance_scale: 7.5
+
 
 
   # ---- Output settings ----
