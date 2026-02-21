@@ -46,7 +46,9 @@ class SummarizationAgent(BaseAgent):
     def _combine_articles(self, articles: list) -> str:
         """
         Format articles into a chronological list of headlines.
+        Also computes date distribution so the LLM can detect outliers.
         """
+        from collections import Counter
         formatted_lines = []
         
         # Sort just in case (though should be sorted by collection agent)
@@ -56,6 +58,7 @@ class SummarizationAgent(BaseAgent):
         except:
              pass
 
+        date_tally: Counter = Counter()
         for article in articles:
             # Extract date string YYYY-MM-DD
             date_str = "Unknown Date"
@@ -63,11 +66,20 @@ class SummarizationAgent(BaseAgent):
                 date_str = article['published_dt'].strftime("%Y-%m-%d")
             elif article.get('published'):
                 date_str = article['published'][:10]
-                
+
+            date_tally[date_str] += 1
             line = f"[{date_str}]\n- {article['title']} ({article.get('source', 'Unknown')})"
             formatted_lines.append(line)
-        
-        return "\n\n".join(formatted_lines)
+
+        # Build a date-distribution note for the LLM
+        total = len(articles)
+        distribution_note = "DATE DISTRIBUTION ACROSS SOURCES:\n" + "\n".join(
+            f"  {date}: {count} article(s) ({round(count/total*100)}%)"
+            for date, count in date_tally.most_common()
+        )
+
+        headlines_block = "\n\n".join(formatted_lines)
+        return f"{distribution_note}\n\nHEADLINES:\n{headlines_block}"
     
     def _generate_summary(self, text: str, topic: str) -> str:
         """
@@ -100,10 +112,14 @@ RULES:
    - **The Outcome**: Investigation status and reactions.
 4. **TONE**: Professional, Investigative, Standard Journalism.
 5. **No Fluff**: Every sentence must contain information.
+6. **DATE ACCURACY — CRITICAL**:
+   - RSS feed timestamps can be wrong by ±1 day due to timezone differences (e.g. an event at 11 PM IST appears as the previous day in UTC).
+   - Use the DATE DISTRIBUTION provided above to identify the CANONICAL EVENT DATE — the date cited by the clear majority of sources.
+   - If a small number of headlines carry a date that is 1 day earlier than the majority, treat those as timezone artifacts; DO NOT use that earlier date as the event date in your report.
+   - Always state the event date using the majority-agreed date. Never derive the event date solely from the earliest or first article.
 
-CRITICAL: The report must be substative and matching the target length.
+CRITICAL: The report must be substantive and match the target length.
 
-HEADLINES:
 {text}
 
 FINAL NEWS SUMMARY:"""

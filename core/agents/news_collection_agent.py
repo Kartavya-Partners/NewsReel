@@ -77,6 +77,9 @@ class NewsCollectionAgent(BaseAgent):
             
         self.log_progress(f"Final collection: {len(articles)} articles")
         
+        # 7. Reconcile dates: fix RSS timezone-drift artifacts via majority vote
+        articles = self._reconcile_dates(articles)
+        
         state.raw_articles = articles
         state.metadata['collection_timestamp'] = datetime.now().isoformat()
         
@@ -202,6 +205,87 @@ class NewsCollectionAgent(BaseAgent):
         # the results are usually relevant by definition.
         # So we simply return True to let the LLM decide later.
         return True
+
+    def _reconcile_dates(self, articles: List[Dict]) -> List[Dict]:
+        """
+        Fix RSS timezone-drift date artifacts using majority-vote.
+
+        RSS feeds often report dates in UTC, while events happen in local time
+        (e.g. IST = UTC+5:30). This can shift an article's published date one
+        day earlier than the actual event date shown on the article page.
+
+        Strategy:
+          1. Count how many articles fall on each calendar date.
+          2. The most frequent date is treated as the CANONICAL event date.
+          3. Any article whose date differs from the canonical date by exactly
+             1 day is reassigned to the canonical date and a warning is logged.
+          4. If the canonical date itself is uncertain (no clear majority or
+             difference > 1 day) the article is left untouched.
+        """
+        if not articles:
+            return articles
+
+        from collections import Counter
+
+        # Build a frequency map of dates (as date objects)
+        date_counts: Counter = Counter()
+        for art in articles:
+            dt = art.get('published_dt')
+            if dt and hasattr(dt, 'date'):
+                date_counts[dt.date()] += 1
+            elif dt and hasattr(dt, 'year'):  # already a date
+                date_counts[dt] += 1
+
+        if not date_counts:
+            return articles  # no parseable dates — nothing to do
+
+        # Majority date = the date cited by the most articles
+        canonical_date, canonical_count = date_counts.most_common(1)[0]
+        total = len(articles)
+
+        self.log_progress(
+            f"Date reconciliation: majority date={canonical_date} "
+            f"({canonical_count}/{total} articles)"
+        )
+
+        # Only correct if the majority date is clearly dominant (>50%)
+        if canonical_count <= total // 2:
+            self.log_progress(
+                "Date reconciliation skipped: no clear majority date.",
+                level="warning"
+            )
+            return articles
+
+        from datetime import timedelta
+        corrected: List[Dict] = []
+        for art in articles:
+            dt = art.get('published_dt')
+            art_date = None
+            if dt and hasattr(dt, 'date'):
+                art_date = dt.date()
+            elif dt and hasattr(dt, 'year'):
+                art_date = dt
+
+            if art_date and art_date != canonical_date:
+                diff = abs((art_date - canonical_date).days)
+                if diff == 1:
+                    # Reassign: replace datetime so the downstream date string changes
+                    new_dt = dt.replace(
+                        year=canonical_date.year,
+                        month=canonical_date.month,
+                        day=canonical_date.day
+                    ) if hasattr(dt, 'replace') else dt
+                    self.log_progress(
+                        f"Date reconciled: '{art['title'][:50]}...' "
+                        f"{art_date} → {canonical_date} (RSS timezone drift)",
+                        level="warning"
+                    )
+                    art = dict(art)  # shallow copy — don't mutate shared state
+                    art['published_dt'] = new_dt
+                    art['published_reconciled'] = True  # flag for traceability
+            corrected.append(art)
+
+        return corrected
 
     def _deduplicate_articles(self, articles: List[Dict]) -> List[Dict]:
         """
