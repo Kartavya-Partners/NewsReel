@@ -37,8 +37,10 @@ class ScriptWriterAgent(BaseAgent):
 
         # Log for UI display
         self.log_progress(f"\n{'='*40}\nGENERATED NARRATION:\n{narration}\n{'='*40}")
-        
+
         return state
+
+
     
     def _generate_narration(self, summary: str, topic: str) -> str:
         """
