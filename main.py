@@ -58,9 +58,10 @@ def main():
     parser.add_argument(
         "--output",
         type=str,
-        default="output/result.json",
+        default="output/results/script_result.json",
         help="Output file for results"
     )
+
     
     parser.add_argument(
         "--log-level",
@@ -102,18 +103,21 @@ def main():
         output_path = Path(args.output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
-        # Embed article counts in result for traceability, but keep result.json clean
+        # Preserve metadata from workflow (includes elite/deep counts)
         result_to_save = {
             k: v for k, v in result.items()
             if k not in ('raw_articles', 'filtered_articles')
         }
-        result_to_save['article_counts'] = {
+        # Fallback if metadata is missing
+        result_to_save['article_counts'] = result.get('metadata', {}).get('article_counts', {
             'raw': len(result.get('raw_articles', [])),
             'filtered': len(result.get('filtered_articles', []))
-        }
+        })
         
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(result_to_save, f, indent=2, ensure_ascii=False)
+            f.flush() # Ensure it's written
+
         
         logger.success(f"Results saved to: {output_path}")
         
@@ -146,7 +150,7 @@ def main():
             "filtered_articles": [_serialize_article(a) for a in filtered_articles]
         }
         
-        articles_path = output_path.parent / "articles.json"
+        articles_path = output_path.parent / "articles_fetched.json"
         with open(articles_path, 'w', encoding='utf-8') as f:
             json.dump(articles_data, f, indent=2, ensure_ascii=False)
         logger.success(
