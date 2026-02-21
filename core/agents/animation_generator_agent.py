@@ -41,6 +41,7 @@ class AnimationGeneratorAgent(VideoGeneratorAgent):
 
         return state
 
+
     # ---------------------------------------------------------
     # Core rendering logic
     # ---------------------------------------------------------
@@ -127,16 +128,23 @@ class AnimationGeneratorAgent(VideoGeneratorAgent):
         ).with_effects(effects)
 
         output_path = self.temp_dir / f"scene_{idx:03d}.mp4"
-        final_clip.write_videofile(
-            str(output_path),
-            fps=self.fps,
-            codec="libx264",
-            audio=False,
-            logger=None
-        )
+        try:
+            final_clip.write_videofile(
+                str(output_path),
+                fps=self.fps,
+                codec="libx264",
+                audio=False,
+                logger=None
+            )
+            # Verify file size
+            if os.path.exists(output_path) and os.path.getsize(output_path) < 1000:
+                self.log_progress(f"Scene {idx} rendered but resulted in tiny file ({os.path.getsize(output_path)} bytes). Potential codec fail.", level="error")
+        except Exception as e:
+            self.log_progress(f"Failed to write scene {idx} video: {e}", level="error")
 
         final_clip.close()
         return output_path
+
 
     def _apply_motion(self, clip: ImageClip, motion_type: str, duration: float) -> ImageClip:
         """
