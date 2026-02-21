@@ -50,40 +50,118 @@ class NewsCollectionAgent(BaseAgent):
             
         self.log_progress(f"Filtered to {len(important_entries)} event-related headlines")
         
-        # 4. Deduplicate (Clusters: Keep First + Last)
-        unique_entries = self._deduplicate_articles(important_entries)
+        # 4. Elite Clustering: Group by title similarity and rank by cluster size
+        clusters = self._cluster_by_similarity(important_entries)
+        # Sort clusters by size (popularity) and take top 6
+        top_clusters = sorted(clusters, key=len, reverse=True)[:6]
         
-        # 5. Cap at max_articles (ensure we don't process too many)
-        final_entries = unique_entries[:self.max_articles]
-        
-        # 6. NOW fetch images (Lightweight content extraction)
-        # We only need OG image, we dont need body text for the LLM anymore
+        # 5. Selective Deep Extraction
         articles = []
-        for i, entry in enumerate(final_entries):
-            # self.log_progress(f"Resolving image for: {entry['title'][:30]}...")
-            _, image_url = self._extract_content(entry['link'])
-            
-            article = {
-                'title': entry['title'],
-                'summary': entry['summary'], # Use RSS summary
-                'link': entry['link'],
-                'published': entry['published'],
-                'published_dt': entry['published_dt'],
-                'source': 'Google News',
-                'content': f"{entry['title']}. {entry.get('summary', '')}", # Merge Title + Summary for context & length
-                'image_url': image_url
-            }
-            articles.append(article)
-            
-        self.log_progress(f"Final collection: {len(articles)} articles")
+        extracted_links = set()
         
-        # 7. Reconcile dates: fix RSS timezone-drift artifacts via majority vote
-        articles = self._reconcile_dates(articles)
+        for cluster_idx, cluster in enumerate(top_clusters):
+            # Try to get high-quality content for this cluster
+            self.log_progress(f"Processing Elite Cluster {cluster_idx+1}/{len(top_clusters)} ({len(cluster)} sources)")
+            
+            cluster_article = None
+            # Try up to 2 sources per cluster for efficiency
+            for entry in cluster[:2]:
+                content, image_url = self._extract_content(entry['link'])
+                
+                if self._is_high_quality_content(content):
+                    cluster_article = {
+                        'title': entry['title'],
+                        'summary': entry['summary'],
+                        'link': entry['link'],
+                        'published': entry['published'],
+                        'published_dt': entry['published_dt'],
+                        'source': entry.get('source', 'Google News'),
+                        'content': content,
+                        'image_url': image_url,
+                        'is_deep': True # Flag for LLM awareness
+                    }
+                    extracted_links.add(entry['link'])
+                    break
+            
+            if cluster_article:
+                articles.append(cluster_article)
+            else:
+                self.log_progress(f"Cluster {cluster_idx+1}: No high-quality content found. Falling back to RSS summary.", level="warning")
+                # Fallback to the first item's RSS summary
+                entry = cluster[0]
+                articles.append({
+                    'title': entry['title'],
+                    'summary': entry['summary'],
+                    'link': entry['link'],
+                    'published': entry['published'],
+                    'published_dt': entry['published_dt'],
+                    'source': entry.get('source', 'Google News'),
+                    'content': f"{entry['title']}. {entry.get('summary', '')}",
+                    'image_url': '',
+                    'is_deep': False
+                })
         
+        # 6. Fill remaining slots with unique non-elite headlines for context
+        remaining_budget = self.max_articles - len(articles)
+        if remaining_budget > 0:
+            # Flatten all clusters into a single list of unique entries
+            all_unique_entries = [item for cluster in clusters for item in cluster]
+            for entry in all_unique_entries:
+                if entry['link'] not in extracted_links and len(articles) < self.max_articles:
+                    articles.append({
+                        'title': entry['title'],
+                        'summary': entry['summary'],
+                        'link': entry['link'],
+                        'published': entry['published'],
+                        'published_dt': entry['published_dt'],
+                        'source': entry.get('source', 'Google News'),
+                        'content': f"{entry['title']}. {entry.get('summary', '')}",
+                        'image_url': '',
+                        'is_deep': False
+                    })
+
+        
+        # 8. Update state and log progress
         state.raw_articles = articles
         state.metadata['collection_timestamp'] = datetime.now().isoformat()
+        state.metadata['article_counts'] = {
+            'raw': len(important_entries),
+            'filtered': len(articles),
+            'deep': sum(1 for a in articles if a.get('is_deep'))
+        }
+        
+        self.log_progress(f"Final collection: {len(articles)} articles ({state.metadata['article_counts']['deep']} depth-extracted)")
+
+        
+        # PERSISTENT LOGGING: Save articles to output/results/articles_fetched.json for user review
+        try:
+            import json
+            from pathlib import Path
+            output_dir = Path("output/results")
+            output_dir.mkdir(parents=True, exist_ok=True)
+            fetched_path = output_dir / "articles_fetched.json"
+
+            
+            # Serialize for JSON
+            def _ser(a):
+                d = dict(a)
+                if 'published_dt' in d:
+                    d['published_dt'] = d['published_dt'].isoformat()
+                return d
+                
+            with open(fetched_path, "w", encoding="utf-8") as f:
+                json.dump({
+                    "topic": state.topic,
+                    "timestamp": state.metadata['collection_timestamp'],
+                    "count": len(articles),
+                    "articles": [_ser(a) for a in articles]
+                }, f, indent=2, ensure_ascii=False)
+            self.log_progress(f"Saved articles to: {fetched_path}")
+        except Exception as e:
+            self.log_progress(f"Failed to save articles_fetched.json: {e}", level="warning")
         
         return state
+
 
     def _fetch_rss_headlines(self, source: Dict, topic: str) -> List[Dict]:
         """Fetch raw RSS entries without crawling content."""
@@ -175,7 +253,69 @@ class NewsCollectionAgent(BaseAgent):
         except:
             return datetime.now()
 
+    def _is_high_quality_content(self, text: str) -> bool:
+        """
+        Check if the extracted text is useful for LLM summarization.
+        Filters out short pages, paywalls, and cookie junk.
+        """
+        if not text or len(text.strip()) < 600:
+            return False
+            
+        text_lower = text.lower()
+        
+        # Paywall / Junk keywords
+        junk_indicators = [
+            "subscribe to read",
+            "sign in to continue",
+            "enable javascript",
+            "access to this page has been denied",
+            "page not found",
+            "cookie policy",
+            "this content is available to subscribers"
+        ]
+        
+        for indicator in junk_indicators:
+            if indicator in text_lower:
+                return False
+                
+        return True
+
+    def _cluster_by_similarity(self, entries: List[Dict]) -> List[List[Dict]]:
+        """Group entries into clusters of similar stories."""
+        if not entries:
+            return []
+            
+        clusters = []
+        processed_indices = set()
+        
+        for i, entry in enumerate(entries):
+            if i in processed_indices:
+                continue
+                
+            current_cluster = [entry]
+            processed_indices.add(i)
+            
+            title_words = set(entry['title'].lower().split())
+            
+            for j, other in enumerate(entries):
+                if j in processed_indices:
+                    continue
+                    
+                other_words = set(other['title'].lower().split())
+                
+                # Check overlap (common words vs total words)
+                if len(title_words) > 0:
+                    overlap = len(title_words & other_words) / len(title_words)
+                    if overlap > 0.60: # 60% overlap
+                        current_cluster.append(other)
+                        processed_indices.add(j)
+            
+            clusters.append(current_cluster)
+            
+        return clusters
+
     def _is_event_headline(self, title: str, topic: str) -> bool:
+
         """
         Check if headline is relevant to the topic.
         We no longer filter by "Event Keywords" (e.g. blast, arrest) because
