@@ -102,17 +102,57 @@ def main():
         output_path = Path(args.output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
+        # Embed article counts in result for traceability, but keep result.json clean
+        result_to_save = {
+            k: v for k, v in result.items()
+            if k not in ('raw_articles', 'filtered_articles')
+        }
+        result_to_save['article_counts'] = {
+            'raw': len(result.get('raw_articles', [])),
+            'filtered': len(result.get('filtered_articles', []))
+        }
+        
         with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(result, f, indent=2, ensure_ascii=False)
+            json.dump(result_to_save, f, indent=2, ensure_ascii=False)
         
         logger.success(f"Results saved to: {output_path}")
         
-        # Save raw articles separately for evaluation and traceability
-        if 'raw_articles' in result and result['raw_articles']:
-            raw_articles_path = output_path.parent / "raw_articles.json"
-            with open(raw_articles_path, 'w', encoding='utf-8') as f:
-                json.dump(result['raw_articles'], f, indent=2, ensure_ascii=False)
-            logger.success(f"Raw articles saved to: {raw_articles_path} ({len(result['raw_articles'])} articles)")
+        # ----------------------------------------------------------------
+        # Save fetched articles to a dedicated structured articles.json
+        # (mirrors the result.json format for consistency)
+        # ----------------------------------------------------------------
+        raw_articles = result.get('raw_articles', [])
+        filtered_articles = result.get('filtered_articles', [])
+        
+        def _serialize_article(art: dict) -> dict:
+            """Convert article dict to JSON-safe form (datetime -> str)."""
+            out = {}
+            for k, v in art.items():
+                if hasattr(v, 'isoformat'):
+                    out[k] = v.isoformat()
+                else:
+                    out[k] = v
+            return out
+        
+        articles_data = {
+            "topic": result.get('topic', args.topic),
+            "metadata": {
+                "collection_timestamp": result.get('metadata', {}).get('collection_timestamp', ''),
+                "total_raw_articles": len(raw_articles),
+                "total_filtered_articles": len(filtered_articles),
+                "source": "Google News RSS"
+            },
+            "raw_articles": [_serialize_article(a) for a in raw_articles],
+            "filtered_articles": [_serialize_article(a) for a in filtered_articles]
+        }
+        
+        articles_path = output_path.parent / "articles.json"
+        with open(articles_path, 'w', encoding='utf-8') as f:
+            json.dump(articles_data, f, indent=2, ensure_ascii=False)
+        logger.success(
+            f"Articles saved to: {articles_path} "
+            f"(raw: {len(raw_articles)}, filtered: {len(filtered_articles)})"
+        )
         
         # Print summary
         print("\n" + "=" * 60)
