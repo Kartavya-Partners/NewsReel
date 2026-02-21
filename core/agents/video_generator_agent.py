@@ -27,8 +27,10 @@ class VideoGeneratorAgent(BaseAgent):
         
         # Paths
         self.output_dir = Path(self.paths_config.get('output_dir', 'output'))
+        self.output_dir.mkdir(parents=True, exist_ok=True)
         self.temp_dir = Path(self.paths_config.get('temp_dir', 'temp'))
         self.temp_dir.mkdir(parents=True, exist_ok=True)
+
     
     def _parse_resolution(self, resolution: str) -> Tuple[int, int]:
         """
