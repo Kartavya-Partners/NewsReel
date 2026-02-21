@@ -49,7 +49,12 @@ class LLMClient:
         """Generate text using Google Gemini with 429 Retry Logic."""
         
         target_model = model or self.model
+        # CRITICAL: If target_model is still empty or invalid, fallback to standard 1.5-flash
+        if not target_model or len(str(target_model)) < 10:
+            target_model = "gemini-1.5-flash"
+        
         current_attempt = 0
+
         final_error = None
         
         while current_attempt <= max_retries:
@@ -73,17 +78,26 @@ class LLMClient:
                     final_prompt = f"System Instruction: {system_prompt}\n\nUser Request: {prompt}"
                     
                 response = model_instance.generate_content(final_prompt)
+            
+                # CHECK FOR TRUNCATION / FINISH REASON
+                if hasattr(response, 'candidates') and response.candidates:
+                    finish_reason = response.candidates[0].finish_reason
+                    if finish_reason != 1: # 1 is SUCCESS/STOP
+                        logger.warning(f"Gemini response finished with reason: {finish_reason} (1=STOP, 2=MAX_TOKENS, 3=SAFETY, etc.)")
                 
                 if response.text:
                     logger.debug(f"Received Gemini response ({len(response.text)} chars)")
+                    # If it looks like it ended abruptly, log a warning
+                    if not response.text.strip().endswith(('.', '!', '?', '"', '}', ']')):
+                        logger.warning("Gemini response may be truncated (doesn't end with sentence-final punctuation)")
                     return response.text
                 else:
-                     raise ValueError("Empty response from Gemini")
-                     
+                    raise ValueError("Empty response from Gemini")
+                         
             except Exception as e:
                 error_str = str(e)
                 final_error = e
-                
+
                 # Check for Quota Limit (429)
                 if "429" in error_str or "quota" in error_str.lower():
                     # Check for DAILY vs RATE limit
@@ -99,6 +113,8 @@ class LLMClient:
                 else:
                     logger.error(f"Gemini generation failed: {e}")
                     raise Exception(f"Gemini Error: {e}")
+
+
 
         raise Exception(f"Gemini Retries Exhausted. Last Error: {final_error}")
 
