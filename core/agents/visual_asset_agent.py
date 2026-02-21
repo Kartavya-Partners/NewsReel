@@ -95,9 +95,7 @@ class VisualAssetAgent(BaseAgent):
                     except Exception as e:
                         self.log_progress(f"Real image failed: {e}", level="warning")
                 
-                # STRATEGY 2a: AI Video Generation (Wan 2.2)
-                # Attempt only if enabled and no real image found (or even if found? user preference. Let's prioritize video if scene warrants it)
-                # For now, if REAL_FOOTAGE found, we used it. If not, we try Video Gen.
+                # STRATEGY 2a: AI Video Generation (Wan 2.2 - Disabled if not enabled in config)
                 if not image_path and self.wan_client:
                     query = scene.get("visual", {}).get("image_query", "")
                     if not query:
@@ -112,27 +110,34 @@ class VisualAssetAgent(BaseAgent):
                     except Exception as e:
                         self.log_progress(f"Scene {idx+1}: Video generation failed: {e}", level="warning")
 
-                # STRATEGY 2b: AI Image Generation (Fallback) - REMOVED
-                # We strictly want Video Generation.
+                # STRATEGY 2b: AI Image Generation (Pollinations.ai - FREE)
                 if not image_path:
-                    # If we have real images, maybe fallback to one of them?
-                    # The user asked to remove "pollinations and other fallback mechanism"
-                    # But keeping "Emergency Real Image" might be acceptable?
-                    # "remove the system... that was of generating images from poliination and other fallback mechanism"
-                    # This implies strictly NO AI IMAGES.
-                    # Real images from news are okay if available.
+                    query = scene.get("visual", {}).get("image_query", "")
+                    if not query:
+                        query = f"News photo of {scene.get('location', 'event')}"
                     
-                    if real_images:
-                         self.log_progress(f"Scene {idx+1}: Video failed. Using real news image as fallback.", level="warning")
-                         try:
-                             # Pick a deterministic random image based on scene index
-                             fallback_url = real_images[idx % len(real_images)]
-                             res, backup = self._fetch_real_image(fallback_url, idx, run_dir)
-                             if res:
-                                 image_path = res
-                                 source = "real_news_fallback"
-                         except Exception as e:
-                             self.log_progress(f"Real fallback failed: {e}", level="error")
+                    try:
+                        self.log_progress(f"Scene {idx+1}: Generating AI Image (Pollinations)...")
+                        img_path = self._fetch_pollinations_image(query, run_dir, idx)
+                        if img_path:
+                            image_path = img_path
+                            source = "generated_pollinations"
+                    except Exception as e:
+                        self.log_progress(f"Scene {idx+1}: Pollinations failed: {e}", level="warning")
+
+                # STRATEGY 3: Real News Image Fallback
+                if not image_path and real_images:
+                    self.log_progress(f"Scene {idx+1}: AI failed. Searching real news images...", level="warning")
+                    try:
+                        # Pick a deterministic image based on scene index if not already used
+                        fallback_url = real_images[idx % len(real_images)]
+                        res, backup = self._fetch_real_image(fallback_url, idx, run_dir)
+                        if res:
+                            image_path = res
+                            source = "real_news_fallback"
+                    except Exception as e:
+                        self.log_progress(f"Real fallback failed: {e}", level="error")
+
 
                 if not image_path:
                     raise RuntimeError("Wan 2.2 Video Generation failed and no real news images available.")
@@ -263,7 +268,34 @@ class VisualAssetAgent(BaseAgent):
              return None, None
         raise RuntimeError(f"Status {response.status_code}")
 
-    # Pollinations Logic Removed
+    def _fetch_pollinations_image(self, query: str, run_dir: Path, idx: int) -> Path:
+        """Download an AI image from Pollinations.ai."""
+        import hashlib
+        import urllib.parse
+        key = hashlib.md5(query.encode()).hexdigest()
+        image_path = run_dir / f"pollin_{key}.jpg"
+        
+        if image_path.exists():
+            return image_path
+            
+        # Optimize query for Pollinations
+        safe_query = urllib.parse.quote(f"{query}, cinematic, news photography, high resolution")
+        url = f"https://image.pollinations.ai/prompt/{safe_query}?width=1280&height=720&nlogo=true&seed={idx}"
+        
+        try:
+            self.log_progress(f"Requesting Pollinations: {url}", level="debug")
+            response = requests.get(url, timeout=45) # Increased timeout
+            if response.status_code == 200:
+                with open(image_path, "wb") as f:
+                    f.write(response.content)
+                return image_path
+            else:
+                self.log_progress(f"Pollinations returned status {response.status_code}", level="warning")
+        except Exception as e:
+            self.log_progress(f"Pollinations AI request failed: {e}", level="warning")
+            
+        return None
+
 
 
     def _fetch_wan_video(self, query: str, run_dir: Path, idx: int) -> Path:
